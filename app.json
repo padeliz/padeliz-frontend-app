@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "scheme": "acme",
+    "plugins": [
+      "expo-router"
+    ],
+    "name": "padel-events-app-front",
+    "slug": "padel-events-app-front"
+  }
+}
