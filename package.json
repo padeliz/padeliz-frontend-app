@@ -1,5 +1,5 @@
 {
-  "name": "padel-events-app-front",
+  "name": "app-padel-events-front",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {

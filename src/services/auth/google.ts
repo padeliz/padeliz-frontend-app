@@ -15,7 +15,7 @@ export const googleAuth = {
   useGoogleAuth() {
     return Google.useAuthRequest({
       clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      redirectUri: 'https://auth.expo.io/@arsh.padel.minitour/padel-events-app',
+      redirectUri: process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI,
       scopes: ['profile', 'email'],
       extraParams: {
         prompt: 'consent',

@@ -1,6 +1,6 @@
 # Padel Events App
 
-A React Native application for managing and participating in padel events.
+A React Native application for participating in padel events.
 
 ## Features
 
@@ -17,14 +17,14 @@ A React Native application for managing and participating in padel events.
 - Node.js (v16 or newer)
 - npm or yarn
 - Expo CLI
-- iOS Simulator (for Mac) or Android Emulator
+- Expo Go or iOS Simulator (for Mac) or Android Emulator
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/padel-events-app.git
-cd padel-events-app
+git clone https://github.com/arshavinel/app-padel-events-front.git
+cd app-padel-events-front
 ```
 
 2. Install dependencies:
@@ -39,14 +39,14 @@ npx expo start
 
 ### Development
 
-- Press `i` to open in iOS simulator
-- Press `a` to open in Android emulator
 - Scan QR code with Expo Go app to open on physical device
+- Press `a` to open in Android emulator
+- Press `i` to open in iOS simulator
 
 ## Project Structure
 
 ```
-padel-events-app/
+app-padel-events-front/
 ├── src/               # Source code
 ├── assets/           # Static assets
 ├── docs/            # Documentation
@@ -55,12 +55,11 @@ padel-events-app/
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. Create your feature branch
+2. Commit your changes
+3. Push to the branch
+4. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License.
+This project is private. All rights reserved.
