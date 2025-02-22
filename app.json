@@ -1,10 +1,24 @@
 {
   "expo": {
-    "scheme": "acme",
-    "plugins": [
-      "expo-router"
-    ],
-    "name": "padel-events-app-front",
-    "slug": "padel-events-app-front"
+    "name": "Padel Events App",
+    "slug": "padel-events-app",
+    "owner": "arsh.padel.minitour",
+    "android": {
+      "package": "com.padelevents.app"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "92811acd-121b-49e2-8887-ed1a724aea9f"
+      }
+    },
+    "web": {
+      "bundler": "webpack",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "padel-events"
   }
 }
