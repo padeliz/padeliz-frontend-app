@@ -1,41 +1,19 @@
 {
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    "strict": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@components/*": [
-        "src/components/*"
-      ],
-      "@services/*": [
-        "src/services/*"
-      ],
-      "@hooks/*": [
-        "src/hooks/*"
-      ],
-      "@context/*": [
-        "src/context/*"
-      ],
-      "@utils/*": [
-        "src/utils/*"
-      ],
-      "@constants/*": [
-        "src/constants/*"
-      ],
-      "@theme/*": [
-        "src/theme/*"
-      ],
-      "@types/*": [
-        "src/types/*"
-      ]
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+        "strict": true,
+        "paths": {
+            "@/*": ["./*"],
+            "@components/*": ["./components/*"],
+            "@services/*": ["./services/*"],
+            "@hooks/*": ["./hooks/*"],
+            "@context/*": ["./context/*"],
+            "@utils/*": ["./utils/*"],
+            "@constants/*": ["./constants/*"],
+            "@theme/*": ["./theme/*"],
+            "@types/*": ["./types/*"],
+            "@assets/*": ["./assets/*"]
+        }
     },
-    "skipLibCheck": true
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+    "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }
