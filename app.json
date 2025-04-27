@@ -5,21 +5,23 @@
         "version": "1.0.0",
         "orientation": "portrait",
         "icon": "./assets/images/icon.png",
-        "scheme": "myapp",
+        "scheme": "googleoauthpadeliz",
         "userInterfaceStyle": "automatic",
         "newArchEnabled": true,
         "ios": {
-            "supportsTablet": true
+            "supportsTablet": true,
+            "bundleIdentifier": "com.googleoauthpadeliz"
         },
         "android": {
             "adaptiveIcon": {
-                "foregroundImage": "./assets/images/adaptive-icon.png",
+                "foregroundImage": "./assets/images/icons/adaptive-icon.png",
                 "backgroundColor": "#ffffff"
-            }
+            },
+            "package": "com.googleoauthpadeliz"
         },
         "web": {
             "bundler": "metro",
-            "output": "static",
+            "output": "server",
             "favicon": "./assets/favicon.png"
         },
         "plugins": [
@@ -27,12 +29,13 @@
             [
                 "expo-splash-screen",
                 {
-                    "image": "./assets/images/splash-icon.png",
+                    "image": "./assets/images/backgrounds/splash.png",
                     "imageWidth": 200,
                     "resizeMode": "contain",
                     "backgroundColor": "#ffffff"
                 }
-            ]
+            ],
+            "expo-secure-store"
         ],
         "experiments": {
             "typedRoutes": true
