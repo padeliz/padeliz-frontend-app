@@ -1,52 +1,36 @@
-import { Stack } from 'expo-router';
-import { PaperProvider } from 'react-native-paper';
-import { theme } from '../theme';
-import { AuthProvider } from '@/context/auth/AuthContext';
-import { ToastProvider } from '@/context/toast/ToastContext';
-import { LoadingProvider } from '@/context/loading/LoadingContext';
-import { EligibilityProvider } from '@/context/eligibility/EligibilityContext';
-import { AuthGuard } from '@/components/common/AuthGuard';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import "react-native-reanimated";
+
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { useEffect } from "react";
+import { AuthProvider } from "@/context/auth";
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
-    <PaperProvider theme={theme}>
-      <LoadingProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <EligibilityProvider>
-              <AuthGuard>
-                <Stack>
-                  <Stack.Screen
-                    name="(auth)"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="(modals)"
-                    options={{
-                      presentation: 'modal',
-                      headerStyle: {
-                        backgroundColor: theme.colors.background,
-                      },
-                    }}
-                  />
-                  <Stack.Screen
-                    name="(eligibility)"
-                    options={{
-                      headerStyle: {
-                        backgroundColor: theme.colors.background,
-                      },
-                    }}
-                  />
-                </Stack>
-              </AuthGuard>
-            </EligibilityProvider>
-          </AuthProvider>
-        </ToastProvider>
-      </LoadingProvider>
-    </PaperProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
