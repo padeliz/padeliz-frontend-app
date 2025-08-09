@@ -1,84 +1,61 @@
-# 🔐 Cross-Platform Authentication with Expo: Google & Apple Sign-In Example
+<img src="https://github.com/user-attachments/assets/6ea788c4-f033-45b8-8701-bae663d57119" width="400">
 
-This is an [Expo](https://expo.dev) project demonstrating a BFF (Backend-for-Frontend) architecture for Google authentication using Expo API Routes and JWTs.
+## App Padeliz Front
 
-## Features
+Expo-based app for https://padeliz.ro
 
--   🔐 Google Authentication
--    Apple Authentication
--   🎯 BFF Architecture with Expo API Routes
--   🎫 JWT-based token management (for native)
--   🎫 Cookies-based session management (for web)
--   📱 Cross-platform support (iOS, Android, Web)
--   🔄 Token refresh mechanism
--   🛡️ Protected API routes
 
-## 🎥 Google Video
+## Development Setup (Windows)
 
-  <a href="https://youtu.be/V2YdhR1hVNw">
-    <img src="https://i.ytimg.com/vi_webp/V2YdhR1hVNw/maxresdefault.webp" height="380" alt="YouTube Video Preview">
-  </a>
+Expo is a React framework for universal native apps — write once for iOS, Android, and web with fast, joyful iteration.
 
-## 🎥 Apple Video
+### Prerequisites
 
-  <a href="https://youtu.be/tqxTijhYhp8">
-    <img src="https://i.ytimg.com/vi_webp/tqxTijhYhp8/maxresdefault.webp" height="380" alt="YouTube Video Preview">
-  </a>
+- [Git](https://git-scm.com/downloads)
+- [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+- WSL2 enabled (Windows Subsystem for Linux)
+- A code editor (recommended: [VS Code](https://code.visualstudio.com/))
+- [Google Cloud Console](https://console.cloud.google.com) project with OAuth 2.0 credentials
+- [Apple Developer Account](https://developer.apple.com/account/)
 
-## Prerequisites
+### First-time setup
 
--   [Google Cloud Console](https://console.cloud.google.com) project with OAuth 2.0 credentials
--   [Apple Developer Account](https://developer.apple.com/account/)
+1. **Install VS Code + “Dev Containers” extension**
 
-## This project supports both Cookies and Tokens
+2. **Clone the repository**
+   ```bash
+   ## in the VSCode terminal
+   git clone https://github.com/padeliz/app-padeliz-front.git
+   ```
 
-Using JWT tokens works well for native platforms but isn't ideal for web applications. Using cookies on web has several important advantages:
+3. **Open the repository folder in VS Code**
 
--   Security: HTTP-only cookies cannot be accessed by JavaScript, protecting against XSS attacks
--   Automatic inclusion: Cookies are automatically sent with every request to your domain
--   CSRF protection: Can be combined with CSRF tokens for additional security
--   Session management: Easier to invalidate sessions server-side
--   Reduced client-side storage concerns: No need to manage token storage in localStorage/sessionStorage
+4. **Open the Command Palette and run "Dev Containers: Reopen in Container"**
 
-The token api detects the platform and handle auth appropriately:
+    Press CTRL + P and type `> Dev Containers: Reopen in Container`
+    - This will open a new window in which the container is initialized.
+    - You're now editing the files directly in the Docker.
 
--   For web requests, sets the token in a secure http-only cookie
--   For native requests, returns the token in the response
+5. **Install Dependencies**
 
-## Authentication Flow
+    *No need to do it manually.*
 
-<img width="1268" alt="Shapes Mar 18 11 43" src="https://github.com/user-attachments/assets/3f9d6aeb-d9b0-467d-b194-20d5d0aa7305" />
+    *Wait for the container to build and finish the automatic dependency installation.*
 
-## Environment Setup
+6. **Environment Setup**
+   ```bash
+   # Copy the environment file
+   copy .env.local.example .env.local
+   ```
 
-1. Create a `.env.local` file in the root directory with:
+### Useful Commands
 
 ```bash
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-JWT_SECRET=your_jwt_secret # use to sign jwt tokens
-EXPO_PUBLIC_BASE_URL=your_base_url # e.g., http://localhost:8081
-EXPO_PUBLIC_SCHEME=your_app_scheme:// # matches app.json scheme
-
-# Generate yours at https://applekeygen.expo.app
-APPLE_CLIENT_SECRET=
+## run the app inside the dev container
+npx expo start
 ```
 
-## Get Started
-
-1. Install dependencies
-
-    ```bash
-    bun install
-    ```
-
-2. Run the app
-
-    ```bash
-    npx expo run:ios
-    ```
-
-## Project Structure
+### Project Structure
 
 -   `/app` - Main application code using file-based routing
 -   `/app/api` - Backend API routes (BFF)
@@ -88,82 +65,57 @@ APPLE_CLIENT_SECRET=
 -   `/components` - Reusable React components
 -   `/utils` - Utility functions and middleware
 
----
+### Troubleshooting
 
-## 🖇️ Sign in with Apple in Expo (iOS + Web)
+1. **Port Conflicts**
+   - If port 8081 is already in use, modify the ports in `docker-compose.yml`
 
-This setup supports Sign in with Apple for both iOS (native) and Web using Expo.
+2. **Docker Issues**
+   - Ensure Docker Desktop is running
+   - Try restarting Docker Desktop
+   - Check WSL2 is properly installed: `wsl --status`
 
----
+3. **Permission Issues**
+   - Run Docker Desktop as administrator
+   - Ensure proper file permissions in WSL
 
-## 📱 iOS (Native with `expo-apple-authentication`)
+## Contributing
 
-```sh
-npx expo install expo-apple-authentication
-```
+1. Create a new branch for your feature
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-To enable the Sign In with Apple capability in your app, set the `ios.usesAppleSignIn` property to `true` in your project's app config:
+2. Make your changes and test them
 
-```json
-{
-    "expo": {
-        "ios": {
-            "usesAppleSignIn": true
-        }
-    }
-}
-```
+3. Commit
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   ```
 
-Add the plugin:
+3. Push to your branch
+   ```bash
+   git push origin feature/your-feature-name
+   ```
 
-```json
-{
-    "expo": {
-        "plugins": ["expo-apple-authentication"]
-    }
-}
-```
-
-## 🌐 Web (OAuth via Expo Router API Routes)
-
-## Environment Variables for Apple Sign In
-
-For web-based Apple Sign In, you'll need to generate a client secret. This is a JWT token that your server uses to validate requests with Apple's servers.
-
-1. Visit [Apple Key Generator](https://applekeygen.expo.app)
-2. Enter your Apple Developer Team ID and Bundle Identifier
-3. Generate and copy the client secret
-4. Add it to your `.env` file:
+4. Create a Pull Request on GitHub
 
 ## Learn More
 
+About Expo:
 -   [Expo documentation](https://docs.expo.dev/)
+-   [Expo on GitHub](https://github.com/expo/expo)
+
+About auth:
 -   [Google OAuth 2.0](https://developers.google.com/identity/protocols/oauth2)
 -   [JWT.io](https://jwt.io/)
 -   [Sign in with Apple](https://developer.apple.com/sign-in-with-apple/)
 
-## Community
+Useful Youtube Videos:
+- <a href="https://youtu.be/V2YdhR1hVNw">Expo OAuth with Google</a>
+- <a href="https://youtu.be/tqxTijhYhp8">Expo Sign in with Expo</a>
 
--   [Expo on GitHub](https://github.com/expo/expo)
--   [Expo Discord](https://chat.expo.dev)
+## License
 
-## Deploy
-
--   Install Expo Application Services:
-    `npm i -g eas-cli`
--   eas init --id ID_OF_THE_PROJECT
--   npx expo export --platform web -c
-
--   Deploy for preview: eas deploy
--   Deploy for production: eas deploy --prod
-
-# Tech stack
-
--   expo
--   expo-router
--   react-native-bottom-tabs
--   nativewind
--   react native reanimated
--   server state management: TanStack
--   app state: Zustand
--   expo image
+This project is private. All rights reserved.
