@@ -14,6 +14,19 @@ import {
 } from "@/utils/constants";
 
 export async function POST(request: Request) {
+  // Guard checks to avoid calling Google with invalid redirect URIs
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    return Response.json(
+      { error: "Server misconfiguration: Missing Google OAuth credentials" },
+      { status: 500 }
+    );
+  }
+  if (!GOOGLE_REDIRECT_URI || GOOGLE_REDIRECT_URI.includes("undefined")) {
+    return Response.json(
+      { error: "Server misconfiguration: GOOGLE_REDIRECT_URI is invalid" },
+      { status: 500 }
+    );
+  }
   const body = await request.formData();
   const code = body.get("code") as string;
   const platform = (body.get("platform") as string) || "native"; // Default to native if not specified

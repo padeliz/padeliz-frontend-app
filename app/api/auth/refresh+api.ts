@@ -20,6 +20,12 @@ import {
  */
 export async function POST(request: Request) {
   try {
+    if (!JWT_SECRET) {
+      return Response.json(
+        { error: "Server misconfiguration: JWT_SECRET is not set" },
+        { status: 500 }
+      );
+    }
     // Determine the platform (web or native)
     let platform = "native";
     let refreshToken: string | null = null;

@@ -6,6 +6,19 @@ import {
 } from "@/utils/constants";
 
 export async function GET(request: Request) {
+  // Guard checks for misconfiguration to avoid generating invalid URLs
+  if (!BASE_URL) {
+    return Response.json(
+      { error: "Server misconfiguration: EXPO_PUBLIC_BASE_URL is not set" },
+      { status: 500 }
+    );
+  }
+  if (!APP_SCHEME) {
+    return Response.json(
+      { error: "Server misconfiguration: EXPO_PUBLIC_SCHEME is not set" },
+      { status: 500 }
+    );
+  }
   if (!GOOGLE_CLIENT_ID) {
     return Response.json(
       { error: "Missing GOOGLE_CLIENT_ID environment variable" },
