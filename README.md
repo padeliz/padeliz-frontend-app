@@ -50,9 +50,14 @@ Expo is a React framework for universal native apps — write once for iOS, Andr
 
 ### Useful Commands
 
+Press CTRL+` inside VSCode to open the terminal. Make sure you're inside the dev container.
+
 ```bash
-## run the app inside the dev container
+## run the app (CI=true, some features disabled)
 npx expo start
+
+## run the app (CI-false, all features enabled, including QR code)
+CI=false npx expo start
 ```
 
 ### Project Structure
