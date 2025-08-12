@@ -1,0 +1,81 @@
+import { View, Text, StyleSheet } from "react-native";
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Button from "@/components/Button";
+import * as Colors from "@/constants/Colors";
+import * as Fonts from "@/constants/Fonts";
+
+type Props = {
+    name: String;
+    location: String;
+    date: String;
+};
+
+export default function EventInfo({ name, location, date}: Props) {
+    return (
+        <View style={styles.container}>
+            <Text style={styles.name}>{ name }</Text>
+            <View style={styles.detailsContainer}>
+                <View style={styles.iconTextContainer}>
+                    <View style={styles.iconContainer}>
+                        <FontAwesome name="map-marker" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                    </View>
+                    <Text style={styles.details}>{ location }</Text>
+                </View>
+                <View style={styles.iconTextContainer}>
+                    <View style={styles.iconContainer}>
+                        <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                    </View>
+                    <Text style={styles.details}>{ date }</Text>
+                </View>
+            </View>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        backgroundColor: Colors.GRAY,
+        paddingLeft: 15,
+        width: 358,
+        height: 124,
+        // padding
+        // borderRadius: 2,
+        // alignItems: "center",
+        // justifyContent: "center",
+        // paddingVertical: 10,
+        // paddingHorizontal: 15,
+        // minWidth: 50,
+        // maxWidth: 200,
+        // alignSelf: "flex-start",
+    },
+    detailsContainer: {
+        paddingBottom: 16,
+        paddingTop: 8,
+    },
+    iconTextContainer: {
+        backgroundColor: Colors.GRAY,
+        width: 326,
+        height: 24,
+        flexDirection: "row",
+        alignItems: "center",
+        marginVertical: 3,
+    },
+    iconContainer: {
+        backgroundColor: Colors.GRAY,
+        width: 14,
+    },
+    name: {
+        color: Colors.WHITE,
+        fontFamily: Fonts.NAME,
+        fontSize: Fonts.HEADING_3,
+        fontWeight: Fonts.MEDIUM,
+        paddingTop: 11,
+    },
+    details: {
+        color: Colors.CREAM,
+        fontFamily: Fonts.NAME,
+        fontSize: Fonts.BODY,
+        fontWeight: Fonts.REGULAR,
+        paddingLeft: 10,
+    },
+});
