@@ -8,7 +8,8 @@ export const WHITE = "#fff";
 export const CREAM = "#E5E7EB";
 export const GREEN = "#3ba55c";
 export const RED = "#ed4245";
-export const GRAY = "#2f3136";
+export const DARK_GRAY = "#2f3136";
+export const GRAY = "#383a40"
 export const ORANGE = "#d47032";
 export const ORANGE_T = "#d4703270";
 

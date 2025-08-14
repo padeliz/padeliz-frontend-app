@@ -6,6 +6,8 @@ type Props = {
   label: string;
 };
 
+// TODO: implement color logic
+
 export default function Button({ label }: Props) {
   return (
     <View style={styles.buttonContainer}>

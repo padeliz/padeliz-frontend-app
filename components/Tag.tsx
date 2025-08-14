@@ -7,6 +7,8 @@ type Props = {
     style: String;
 };
 
+// TODO: add color within style, not stylesheet
+
 export default function Tag({ label, style }: Props) {
 
     if (style == "blue") { 

@@ -9,9 +9,12 @@ type Props = {
     location: String;
     date: String;
     registered: boolean;
+    mini?: boolean;
 };
 
-export default function EventInfo({ name, location, date, registered }: Props) {
+// TODO: REMOVE PADDING LEFT AND CHANGE COLOR TO DARK_GRAY IN MINI VERSION
+
+export default function EventInfo({ name, location, date, registered, mini }: Props) {
     if (!registered) {
         return (
             <View style={styles.container}>
@@ -37,7 +40,19 @@ export default function EventInfo({ name, location, date, registered }: Props) {
         );
     }
 
-    return (
+    return (mini?
+        <View style={styles.textContainer}>
+            <Text style={[styles.name, {fontSize: Fonts.HEADING_1}]}>{ name }</Text>
+            <View style={styles.detailsContainer}>
+                <View style={styles.iconTextContainer}>
+                    <View style={styles.iconContainer}>
+                        <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                    </View>
+                    <Text style={styles.details}>{ date }</Text>
+                </View>
+            </View>
+        </View>
+        :
         <View style={styles.textContainer}>
             <Text style={styles.name}>{ name }</Text>
             <View style={styles.detailsContainer}>
