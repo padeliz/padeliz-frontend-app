@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import Tag from "@/components/Tag";
 import EventInfo from "@/components/EventInfo";
 import EventCard from "@/components/EventCard";
+import Button from "@/components/Button";
 
 const source = require("../assets/images/estilo-cochino.png");
 
@@ -15,9 +16,9 @@ export default function HomeScreen() {
                 <Tag label="Registered" style="green"/>
                 <Tag label="Student Discount" style="green"/>
                 <Tag label="Pending Review" style="orange"/>
-                <EventInfo name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" />
-                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} />
-                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} />
+                <EventInfo name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" registered={true}/>
+                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} />
+                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false}/>
             </ScrollView>
         </SafeAreaView>
     );

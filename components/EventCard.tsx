@@ -1,5 +1,4 @@
 import { View, StyleSheet, ImageBackground, ImageSourcePropType } from "react-native";
-// import { ImageSource } fr
 import Tag from "@/components/Tag";
 import EventInfo from "@/components/EventInfo";
 
@@ -8,9 +7,10 @@ type Props = {
     location: String;
     date: String;
     image: ImageSourcePropType;
+    registered: boolean;
 };
 
-export default function EventCard({ name, location, date, image}: Props) {
+export default function EventCard({ name, location, date, image, registered }: Props) {
     return (
         <View style={styles.container}>
             <ImageBackground source={image} style={styles.image}> 
@@ -18,7 +18,7 @@ export default function EventCard({ name, location, date, image}: Props) {
                     <Tag label="Estilo Cochino!" style="blue"/>
                 </View>
             </ImageBackground>
-            <EventInfo name={name} location={location} date={date} />
+            <EventInfo name={name} location={location} date={date} registered={registered}/>
         </View>
     );
 }
@@ -26,7 +26,6 @@ export default function EventCard({ name, location, date, image}: Props) {
 const styles = StyleSheet.create({
     container: {
         width: 358,
-        height: 316,
         borderRadius: 8,
         overflow: "hidden",
     },
@@ -39,7 +38,4 @@ const styles = StyleSheet.create({
         width: 358,
         height: 200
     },
-    // eventInfoContainer: {
-    //     flex:
-    // }
 });

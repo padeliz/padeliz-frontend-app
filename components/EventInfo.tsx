@@ -8,11 +8,37 @@ type Props = {
     name: String;
     location: String;
     date: String;
+    registered: boolean;
 };
 
-export default function EventInfo({ name, location, date}: Props) {
+export default function EventInfo({ name, location, date, registered }: Props) {
+    if (!registered) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.textContainer}>
+                    <Text style={styles.name}>{ name }</Text>
+                    <View style={styles.detailsContainer}>
+                        <View style={styles.iconTextContainer}>
+                            <View style={styles.iconContainer}>
+                                <FontAwesome name="map-marker" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                            </View>
+                            <Text style={styles.details}>{ location }</Text>
+                        </View>
+                        <View style={styles.iconTextContainer}>
+                            <View style={styles.iconContainer}>
+                                <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                            </View>
+                            <Text style={styles.details}>{ date }</Text>
+                        </View>
+                    </View>
+                </View>
+                <Button label="See Event" />
+            </View>
+        );
+    }
+
     return (
-        <View style={styles.container}>
+        <View style={styles.textContainer}>
             <Text style={styles.name}>{ name }</Text>
             <View style={styles.detailsContainer}>
                 <View style={styles.iconTextContainer}>
@@ -35,18 +61,14 @@ export default function EventInfo({ name, location, date}: Props) {
 const styles = StyleSheet.create({
     container: {
         backgroundColor: Colors.GRAY,
+        width: 358,
+        alignContent: "center",
+        alignItems: "center",
+    },
+    textContainer: {
+        backgroundColor: Colors.GRAY,
         paddingLeft: 15,
         width: 358,
-        height: 124,
-        // padding
-        // borderRadius: 2,
-        // alignItems: "center",
-        // justifyContent: "center",
-        // paddingVertical: 10,
-        // paddingHorizontal: 15,
-        // minWidth: 50,
-        // maxWidth: 200,
-        // alignSelf: "flex-start",
     },
     detailsContainer: {
         paddingBottom: 16,

@@ -1,7 +1,6 @@
 import { StyleSheet, View, Pressable, Text } from 'react-native';
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
-import { blue } from 'react-native-reanimated/lib/typescript/Colors';
 
 type Props = {
   label: string;
@@ -21,23 +20,23 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: 326,
     height: 48,
-    top: 120,
-    bottom: 16,
     marginHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
   },
   button: {
-    color: Colors.BLUE,
+    backgroundColor: Colors.BLUE,
     borderRadius: 8,
     width: '100%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
   },
   buttonLabel: {
     color: Colors.WHITE,
-    fontSize: 16,
+    fontFamily: Fonts.NAME,
+    fontSize: Fonts.BODY,
+    fontWeight: Fonts.MEDIUM,
   },
 });
