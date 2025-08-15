@@ -5,7 +5,8 @@ import EventCard from "@/components/EventCard";
 import { EventDetails } from "@/types/types";
 import UpcomingEventDetails from "@/components/UpcomingEventDetails";
 import Step from "@/components/Step";
-import { ORANGE } from "@/constants/Colors";
+import Steps from "@/components/Steps";
+import * as Colors from "@/constants/Colors";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -16,7 +17,7 @@ export const sampleEvent: EventDetails = {
     eventName: "ARSH Padel Mini Tour",
     date: "24 aug 2025",
     location: "Padel ONE",
-    price: "ROM 45-75",
+    price: "RON 45-75",
     activities: activities,
     times: times,
     eventDescription: "Me gustan los puerco', bien perro, bien suelto",
@@ -39,9 +40,8 @@ export default function HomeScreen() {
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} />
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false}/>
                 <UpcomingEventDetails event={sampleEvent} />
-                <Step isCompleted={true} isCurrent={false} number={1} color={ORANGE} label="Source"></Step>
-                <Step isCompleted={true} isCurrent={true} number={1} color={ORANGE} label="Source"></Step>
-                <Step isCompleted={false} isCurrent={false} number={1} color={ORANGE} label="Source"></Step>
+                <Steps labels={["Source", "Sports", "Details", "Photo", "Review"]} currentStep={3} color={Colors.ORANGE} />
+                <Steps labels={["Division", "Payment", "Proof", "Pending"]} currentStep={3} color={Colors.BLUE} />
             </ScrollView>
         </SafeAreaView>
     );
