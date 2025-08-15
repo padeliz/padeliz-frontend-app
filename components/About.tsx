@@ -31,5 +31,6 @@ const styles = StyleSheet.create({
         fontWeight: Fonts.REGULAR,
         textAlign: "justify",
         marginBottom: 12,
+        marginTop: 12,
     },
 });

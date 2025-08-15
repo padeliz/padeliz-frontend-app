@@ -5,10 +5,27 @@ import EventCard from "@/components/EventCard";
 import LocationPriceBox from "@/components/LocationPriceBox";
 import Schedule from "@/components/Schedule";
 import About from "@/components/About";
+import PersonCard from "@/components/PersonCard";
+import { EventDetails } from "@/types/types";
+import UpcomingEventDetails from "@/components/UpcomingEventDetails";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
 let times = ["11:30", "12:20 - 15:30", "15:45 - 15:59"];
+
+export const sampleEvent: EventDetails = {
+    eventImage: source,
+    eventName: "ARSH Padel Mini Tour",
+    date: "24 aug 2025",
+    location: "Padel ONE",
+    price: "ROM 45-75",
+    activities: activities,
+    times: times,
+    eventDescription: "Me gustan los puerco', bien perro, bien suelto",
+    organizerImage: source,
+    organizerName: "Jenn Morel",
+    organizerTitle: "Singer and Rapper"
+};
 
 export default function HomeScreen() {
     return (
@@ -29,6 +46,8 @@ export default function HomeScreen() {
                     Que me dé sin miedo, que me coma hasta lo' hueso'
                     Yo no tomo perco (No) pero me le acerco (Sí)
                     Pa' que to'a esa vaina me anestesie todo el cuerpo"></About>
+                <PersonCard image={source} name="Jenn Morel" title="Singer and Rapper"></PersonCard>
+                <UpcomingEventDetails event={sampleEvent} />
             </ScrollView>
         </SafeAreaView>
     );

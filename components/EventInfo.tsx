@@ -41,9 +41,9 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
     }
 
     return (mini?
-        <View style={styles.textContainer}>
+        <View style={[styles.textContainer, {backgroundColor: Colors.DARK_GRAY}]}>
             <Text style={[styles.name, {fontSize: Fonts.HEADING_1}]}>{ name }</Text>
-            <View style={styles.detailsContainer}>
+            <View style={[styles.detailsContainer, {backgroundColor: Colors.DARK_GRAY}]}>
                 <View style={styles.iconTextContainer}>
                     <View style={styles.iconContainer}>
                         <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
@@ -53,7 +53,7 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
             </View>
         </View>
         :
-        <View style={styles.textContainer}>
+        <View style={[styles.textContainer, {backgroundColor: Colors.GRAY}]}>
             <Text style={styles.name}>{ name }</Text>
             <View style={styles.detailsContainer}>
                 <View style={styles.iconTextContainer}>
@@ -81,7 +81,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     textContainer: {
-        backgroundColor: Colors.GRAY,
         paddingLeft: 15,
         width: 358,
     },
@@ -90,7 +89,6 @@ const styles = StyleSheet.create({
         paddingTop: 8,
     },
     iconTextContainer: {
-        backgroundColor: Colors.GRAY,
         width: 326,
         height: 24,
         flexDirection: "row",
@@ -98,7 +96,6 @@ const styles = StyleSheet.create({
         marginVertical: 3,
     },
     iconContainer: {
-        backgroundColor: Colors.GRAY,
         width: 14,
     },
     name: {
