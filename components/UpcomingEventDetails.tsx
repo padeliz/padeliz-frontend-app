@@ -7,7 +7,7 @@ import PersonCard from "./PersonCard";
 import { EventDetails } from "@/types/types";
 import { DARK_GRAY } from "@/constants/Colors";
 
-// TODO: maybe fix margins bc they are made by ear, especially about
+// TODO: maybe fix margins bc they are UGLY
 type Props = {
     event: EventDetails;
 };
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     margin: {
-        marginLeft: 13,
+        alignItems: "center",
     },
     scrollview: {
         flex: 1,

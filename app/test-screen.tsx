@@ -40,13 +40,6 @@ export default function HomeScreen() {
                 <EventInfo name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" registered={true} mini={true}/>
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} />
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false}/>
-                <LocationPriceBox location="Padel ONE" price="RON 45-75" />
-                <Schedule activities={activities} times={times}></Schedule>
-                <About text="Me gustan los puerco', bien perro, bien suelto
-                    Que me dé sin miedo, que me coma hasta lo' hueso'
-                    Yo no tomo perco (No) pero me le acerco (Sí)
-                    Pa' que to'a esa vaina me anestesie todo el cuerpo"></About>
-                <PersonCard image={source} name="Jenn Morel" title="Singer and Rapper"></PersonCard>
                 <UpcomingEventDetails event={sampleEvent} />
             </ScrollView>
         </SafeAreaView>
