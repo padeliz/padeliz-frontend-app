@@ -12,8 +12,6 @@ type Props = {
     mini?: boolean;
 };
 
-// TODO: REMOVE PADDING LEFT AND CHANGE COLOR TO DARK_GRAY IN MINI VERSION
-
 export default function EventInfo({ name, location, date, registered, mini }: Props) {
     if (!registered) {
         return (

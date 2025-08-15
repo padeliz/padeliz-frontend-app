@@ -2,12 +2,10 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import Tag from "@/components/Tag";
 import EventInfo from "@/components/EventInfo";
 import EventCard from "@/components/EventCard";
-import LocationPriceBox from "@/components/LocationPriceBox";
-import Schedule from "@/components/Schedule";
-import About from "@/components/About";
-import PersonCard from "@/components/PersonCard";
 import { EventDetails } from "@/types/types";
 import UpcomingEventDetails from "@/components/UpcomingEventDetails";
+import Step from "@/components/Step";
+import { ORANGE } from "@/constants/Colors";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -41,6 +39,9 @@ export default function HomeScreen() {
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} />
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false}/>
                 <UpcomingEventDetails event={sampleEvent} />
+                <Step isCompleted={true} isCurrent={false} number={1} color={ORANGE} label="Source"></Step>
+                <Step isCompleted={true} isCurrent={true} number={1} color={ORANGE} label="Source"></Step>
+                <Step isCompleted={false} isCurrent={false} number={1} color={ORANGE} label="Source"></Step>
             </ScrollView>
         </SafeAreaView>
     );
