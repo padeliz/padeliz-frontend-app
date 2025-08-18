@@ -19,6 +19,7 @@ export default function({isCompleted, isCurrent, number, color, label}: Props) {
                 <View style={[styles.circle, {backgroundColor}]}>
                     <FontAwesome name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
                 </View>
+                <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
             </View>
         );
     }
@@ -29,6 +30,7 @@ export default function({isCompleted, isCurrent, number, color, label}: Props) {
                 <View style={[styles.circle, {backgroundColor}]}>
                     <Text style={[styles.text, {fontSize: Fonts.BODY_S, color: Colors.WHITE}]}>{number}</Text>
                 </View>
+                <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
             </View>
         );
     }
@@ -38,6 +40,7 @@ export default function({isCompleted, isCurrent, number, color, label}: Props) {
                 <View style={[styles.circle, {backgroundColor: Colors.GRAY}]}>
                     <Text style={[styles.text, {fontSize: Fonts.BODY_S, color: Colors.WHITE}]}>{number}</Text>
                 </View>
+                <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
             </View>
         );
 }

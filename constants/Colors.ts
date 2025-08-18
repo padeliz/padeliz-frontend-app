@@ -12,6 +12,7 @@ export const DARK_GRAY = "#2f3136";
 export const GRAY = "#383a40"
 export const ORANGE = "#d47032";
 export const ORANGE_T = "#d4703270";
+export const INACTIVE = "#ADAEBC";
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
