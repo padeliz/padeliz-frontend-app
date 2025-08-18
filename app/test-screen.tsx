@@ -9,6 +9,7 @@ import Steps from "@/components/Steps";
 import * as Colors from "@/constants/Colors";
 import StepNavigationButton from "@/components/StepNavigationButton";
 import FormNavigationContainer from "@/components/FormNavigationContainer";
+import Checkbox from "@/components/Checkbox";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -51,6 +52,8 @@ export default function HomeScreen() {
                 <FormNavigationContainer isFirst={false} isActive={true} currentStep={3} isFinal={false}stepList={["Source", "Sports", "Details", "Photo", "Review"]}/>
                 <FormNavigationContainer isFirst={true} isActive={true} currentStep={1} isFinal={true}stepList={["Source", "Sports", "Details", "Photo", "Review"]}/>
                 <FormNavigationContainer isFirst={false} isActive={true} currentStep={3} isFinal={true}stepList={["Source", "Sports", "Details", "Photo", "Review"]}/>
+
+                <Checkbox></Checkbox>
             </ScrollView>
         </SafeAreaView>
     );
