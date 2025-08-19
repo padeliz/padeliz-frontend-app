@@ -1,18 +1,17 @@
 import React, { useState } from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import Icon from "@expo/vector-icons/FontAwesome";
 import * as Colors from "@/constants/Colors";
 
-export default function Checkbox() {
-    const [checked, setChecked] = useState(false);
+type Props = {
+    checked: boolean;
+};
 
+export default function Checkbox({checked}: Props) {
     return (
-        <Pressable
-            onPress={() => setChecked(!checked)}
-            style={[styles.container, checked ? styles.boxChecked : styles.boxUnchecked]}
-        >
-        {checked && <Icon name="check" size={14} color={Colors.WHITE} />}
-        </Pressable>
+        <View style={[styles.container, checked ? styles.boxChecked : styles.boxUnchecked]}>
+            {checked && <Icon name="check" size={14} color={Colors.WHITE} />}
+        </View>
     );
 }
 
