@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import Detail from "./Detail";
+import Detail from "../TextBoxes/Detail";
 import * as Colors from "@/constants/Colors";
 
 type Props = {

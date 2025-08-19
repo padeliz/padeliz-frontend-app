@@ -1,6 +1,6 @@
 import { View, StyleSheet, ImageBackground, ImageSourcePropType } from "react-native";
-import Tag from "@/components/Tag";
-import EventInfo from "@/components/EventInfo";
+import Tag from "@/components/Visuals/Tag";
+import EventInfo from "@/components/TextBoxes/EventInfo";
 
 type Props = {
     name: String;

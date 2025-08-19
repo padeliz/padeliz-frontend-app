@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import StepNavigationButton from "./StepNavigationButton";
+import StepNavigationButton from "../Buttons/StepNavigationButton";
 
 type Props = {
     isFirst: boolean;

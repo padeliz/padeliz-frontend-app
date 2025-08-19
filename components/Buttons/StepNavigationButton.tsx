@@ -1,7 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
-import { blue } from "react-native-reanimated/lib/typescript/Colors";
 
 type Props = {
     isForward: boolean;

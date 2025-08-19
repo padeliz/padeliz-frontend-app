@@ -1,9 +1,9 @@
 import { View, Image, ImageSourcePropType, SafeAreaView, ScrollView, StyleSheet } from "react-native";
-import EventInfo from "./EventInfo";
-import LocationPriceBox from "./LocationPriceBox";
-import Schedule from "./Schedule";
-import About from "./About";
-import PersonCard from "./PersonCard";
+import EventInfo from "../TextBoxes/EventInfo";
+import LocationPriceBox from "../Visuals/LocationPriceBox";
+import Schedule from "../TextBoxes/Schedule";
+import About from "../TextBoxes/About";
+import PersonCard from "../TextBoxes/PersonCard";
 import { EventDetails } from "@/types/types";
 import { DARK_GRAY } from "@/constants/Colors";
 

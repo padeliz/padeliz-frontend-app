@@ -1,16 +1,16 @@
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
-import Tag from "@/components/Tag";
-import EventInfo from "@/components/EventInfo";
-import EventCard from "@/components/EventCard";
+import Tag from "@/components/Visuals/Tag";
+import EventInfo from "@/components/TextBoxes/EventInfo";
+import EventCard from "@/components/BigComponents/EventCard";
 import { EventDetails } from "@/types/types";
-import UpcomingEventDetails from "@/components/UpcomingEventDetails";
-import Step from "@/components/Step";
+import UpcomingEventDetails from "@/components/BigComponents/UpcomingEventDetails";
+import Step from "@/components/Visuals/Step";
 import Steps from "@/components/Steps";
 import * as Colors from "@/constants/Colors";
-import StepNavigationButton from "@/components/StepNavigationButton";
-import FormNavigationContainer from "@/components/FormNavigationContainer";
-import Checkbox from "@/components/Checkbox";
-import FormCheckbox from "@/components/FormCheckbox";
+import StepNavigationButton from "@/components/Buttons/StepNavigationButton";
+import FormNavigationContainer from "@/components/Visuals/FormNavigationContainer";
+import Checkbox from "@/components/Visuals/Checkbox";
+import FormCheckbox from "@/components/Buttons/FormCheckbox";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];

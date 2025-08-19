@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import Icon from "@expo/vector-icons/FontAwesome";
 import { FontAwesome } from "@expo/vector-icons";
-import Checkbox from "./Checkbox";
+import Checkbox from "../Visuals/Checkbox";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
