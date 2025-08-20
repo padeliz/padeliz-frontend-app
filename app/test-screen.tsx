@@ -5,12 +5,13 @@ import EventCard from "@/components/BigComponents/EventCard";
 import { EventDetails } from "@/types/types";
 import UpcomingEventDetails from "@/components/BigComponents/UpcomingEventDetails";
 import Step from "@/components/Visuals/Step";
-import Steps from "@/components/Steps";
+import Steps from "@/components/Visuals/Steps";
 import * as Colors from "@/constants/Colors";
 import StepNavigationButton from "@/components/Buttons/StepNavigationButton";
 import FormNavigationContainer from "@/components/Visuals/FormNavigationContainer";
 import Checkbox from "@/components/Visuals/Checkbox";
 import FormCheckbox from "@/components/Buttons/FormCheckbox";
+import TextInputBox from "@/components/Misc/TextInputBox";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -54,9 +55,11 @@ export default function HomeScreen() {
                 <FormNavigationContainer isFirst={true} isActive={true} currentStep={1} isFinal={true}stepList={["Source", "Sports", "Details", "Photo", "Review"]}/>
                 <FormNavigationContainer isFirst={false} isActive={true} currentStep={3} isFinal={true}stepList={["Source", "Sports", "Details", "Photo", "Review"]}/>
 
-                <Checkbox checked={true}/>
-                <Checkbox checked={false}/>
                 <FormCheckbox iconName="check" label="whatever" />
+
+
+                <TextInputBox isDate={false} label="first name" sublabel="(ex: Andreea)" />
+                <TextInputBox isDate={true} label="" sublabel="" />
             </ScrollView>
         </SafeAreaView>
     );

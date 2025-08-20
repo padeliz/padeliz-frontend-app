@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import Step from "./Visuals/Step";
+import Step from "./Step";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
