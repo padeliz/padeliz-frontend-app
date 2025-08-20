@@ -13,6 +13,7 @@ import Checkbox from "@/components/Visuals/Checkbox";
 import FormCheckbox from "@/components/Buttons/FormCheckbox";
 import TextInputBox from "@/components/Misc/TextInputBox";
 import FormQuestion from "@/components/BigComponents/FormQuestion";
+import Warning from "@/components/TextBoxes/Warning";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -70,6 +71,8 @@ export default function HomeScreen() {
                     subtitle="It's nice having you here" labels={["first name", "last name", "phone number", "date"]}
                     sublabels={["ex: Andreea", "ex: Popescu", "ex: +40700000000", ""]}
                     icons={["check", "check", "check", "check"]}></FormQuestion>
+
+                <Warning text="If no picture meets the criteria, the eligibility application will be rejected."></Warning>
                      
             </ScrollView>
         </SafeAreaView>
