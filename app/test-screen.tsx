@@ -12,6 +12,7 @@ import FormNavigationContainer from "@/components/Visuals/FormNavigationContaine
 import Checkbox from "@/components/Visuals/Checkbox";
 import FormCheckbox from "@/components/Buttons/FormCheckbox";
 import TextInputBox from "@/components/Misc/TextInputBox";
+import FormQuestion from "@/components/BigComponents/FormQuestion";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -60,6 +61,16 @@ export default function HomeScreen() {
 
                 <TextInputBox isDate={false} label="first name" sublabel="(ex: Andreea)" />
                 <TextInputBox isDate={true} label="" sublabel="" />
+
+                <FormQuestion isCheckable={true} title="How did you discover us?"
+                    subtitle="Select where you first heard about Padeliz" labels={["Instagram", "TikTok", "Facebook", "Friends"]}
+                    sublabels={["", "", "", ""]}
+                    icons={["check", "check", "check", "check"]}></FormQuestion>
+                <FormQuestion isCheckable={false} title="Tell us more about you"
+                    subtitle="It's nice having you here" labels={["first name", "last name", "phone number", "date"]}
+                    sublabels={["ex: Andreea", "ex: Popescu", "ex: +40700000000", ""]}
+                    icons={["check", "check", "check", "check"]}></FormQuestion>
+                     
             </ScrollView>
         </SafeAreaView>
     );
