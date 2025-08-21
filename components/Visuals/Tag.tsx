@@ -3,44 +3,32 @@ import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
 type Props = {
-    label: String;
-    style: String;
+    label: string;
+    color: string;
+    isTransparent: boolean;
+    color2?: string;
 };
 
-// TODO: add color within style, not stylesheet
+export default function Tag({ label, color, color2, isTransparent }: Props) {
 
-export default function Tag({ label, style }: Props) {
-
-    if (style == "blue") { 
+    if (isTransparent) { 
         return (
-            <View style={styles.blueContainer}>
-                <Text style={styles.whiteLabel}>{ label }</Text>
+            <View style={[styles.container, {backgroundColor: color2, borderColor: color, borderWidth: 2}]}>
+                <Text style={[styles.label, {color: color}]}>{ label }</Text>
             </View>
         );
     }
 
-    if (style == "green") {
-        return (
-            <View style={styles.greenContainer}>
-                <Text style={styles.whiteLabel}>{ label }</Text>
-            </View>
-        );
-    }
-
-    if (style == "orange") {
-        return (
-            <View style={styles.orangeContainer}>
-                <Text style={styles.orangeLabel}>{ label }</Text>
-            </View>
-        );
-    }
+    return (
+        <View style={[styles.container, {backgroundColor: color}]}>
+            <Text style={[styles.label, {color: Colors.WHITE}]}>{ label }</Text>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-    blueContainer: {
-        backgroundColor: Colors.BLUE,
+    container: {
         borderRadius: 9999,
-        // height: 20,
         alignItems: "center",
         justifyContent: "center",
         paddingVertical: 6,
@@ -72,10 +60,8 @@ const styles = StyleSheet.create({
         minWidth: 50,
         maxWidth: 200,
         alignSelf: "flex-start",
-        opacity: 0.3,
     },
-    whiteLabel: {
-        color: Colors.WHITE,
+    label: {
         fontFamily: Fonts.NAME,
         fontSize: Fonts.BODY_S,
         fontWeight: Fonts.REGULAR,

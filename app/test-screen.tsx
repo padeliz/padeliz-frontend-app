@@ -39,15 +39,15 @@ export default function HomeScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollview}>
-                <Tag label="New" style="blue"/>
-                <Tag label="Pending Payment" style="blue"/>
-                <Tag label="Few Spots Remaining" style="blue"/>
-                <Tag label="Registered" style="green"/>
-                <Tag label="Student Discount" style="green"/>
-                <Tag label="Pending Review" style="orange"/>
+                <Tag label="New" color={Colors.BLUE} isTransparent={false}/>
+                <Tag label="Pending Payment" color={Colors.BLUE} isTransparent={false}/>
+                <Tag label="Few Spots Remaining" color={Colors.BLUE} isTransparent={false}/>
+                <Tag label="Registered" color={Colors.GREEN} isTransparent={false}/>
+                <Tag label="Student Discount" color={Colors.GREEN} isTransparent={false}/>
+                <Tag label="Pending Review" color={Colors.ORANGE} color2={Colors.ORANGE_T} isTransparent={true}/>
                 <EventInfo name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" registered={true} mini={true}/>
-                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} />
-                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false}/>
+                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} tag="Estilo Cochino"/>
+                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false} tag="New"/>
                 <UpcomingEventDetails event={sampleEvent} />
                 <Steps labels={["Source", "Sports", "Details", "Photo", "Review"]} currentStep={3} color={Colors.ORANGE} />
                 <Steps labels={["Division", "Payment", "Proof", "Pending"]} currentStep={3} color={Colors.BLUE} />
@@ -77,7 +77,7 @@ export default function HomeScreen() {
                 <Warning text="If no picture meets the criteria, the eligibility application will be rejected."></Warning>
                 <PictureDescription image={source} />
                 <ImageSelect></ImageSelect>
-                     
+                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} tag="Estilo Cochino" isMini={true} />
             </ScrollView>
         </SafeAreaView>
     );

@@ -16,7 +16,7 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
     if (!registered) {
         return (
             <View style={styles.container}>
-                <View style={styles.textContainer}>
+                <View style={[styles.textContainer, {alignSelf: "flex-start"}]}>
                     <Text style={styles.name}>{ name }</Text>
                     <View style={styles.detailsContainer}>
                         <View style={styles.iconTextContainer}>
@@ -80,15 +80,16 @@ const styles = StyleSheet.create({
     },
     textContainer: {
         paddingLeft: 15,
-        width: 358,
+        alignItems: "flex-start",
+        // width: 358,
     },
     detailsContainer: {
         paddingBottom: 16,
         paddingTop: 8,
     },
     iconTextContainer: {
-        width: 326,
-        height: 24,
+        // width: 326,
+        // height: 24,
         flexDirection: "row",
         alignItems: "center",
         marginVertical: 3,
