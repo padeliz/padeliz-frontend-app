@@ -14,6 +14,8 @@ import FormCheckbox from "@/components/Buttons/FormCheckbox";
 import TextInputBox from "@/components/Misc/TextInputBox";
 import FormQuestion from "@/components/BigComponents/FormQuestion";
 import Warning from "@/components/TextBoxes/Warning";
+import PictureDescription from "@/components/Visuals/PictureDescription";
+import ImageSelect from "@/components/Visuals/ImageSelect";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -73,6 +75,8 @@ export default function HomeScreen() {
                     icons={["check", "check", "check", "check"]}></FormQuestion>
 
                 <Warning text="If no picture meets the criteria, the eligibility application will be rejected."></Warning>
+                <PictureDescription image={source} />
+                <ImageSelect></ImageSelect>
                      
             </ScrollView>
         </SafeAreaView>
