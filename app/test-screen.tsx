@@ -20,6 +20,8 @@ import Button from "@/components/Buttons/Button";
 import InactiveButton from "@/components/TextBoxes/InactiveButton";
 import DivisionCard from "@/components/Buttons/DivisionCard";
 import ChooseDivision from "@/components/BigComponents/ChooseDivision";
+import PaymentDetails from "@/components/TextBoxes/PaymentDetails";
+import CircleChecker from "@/components/Visuals/CircleChecker";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -114,6 +116,12 @@ export default function HomeScreen() {
                 <DivisionCard details={sampleDivision2} />
                 <DivisionCard details={sampleDivision3} />
                 <ChooseDivision divisions={[sampleDivision, sampleDivision2, sampleDivision3]} />
+                <PaymentDetails division="Student Rookies" price={45} isDiscount={false} isStudent={true} isStep2={false} />
+                <PaymentDetails division="Student Rookies" price={45} isDiscount={false} isStudent={true} isStep2={true} />
+                <PaymentDetails division="Student Rookies" price={45} isDiscount={true} isStudent={false} isStep2={true} />
+                <PaymentDetails division="Student Rookies" price={45} isDiscount={true} isStudent={true} isStep2={true} />
+                <CircleChecker checked={true} />
+                <CircleChecker checked={false} />
             </ScrollView>
         </SafeAreaView>
     );

@@ -17,7 +17,7 @@ export default function ChooseDivision({divisions}: Props) {
             <ScrollView style={styles.container} contentContainerStyle={{ rowGap: 16 }}>
                 {divisions.map((item, index) => (
                     <DivisionCard key={index} details={item} />
-                ))};
+                ))}
             </ScrollView>
         </View>
     );

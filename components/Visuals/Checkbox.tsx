@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import Icon from "@expo/vector-icons/FontAwesome";
 import * as Colors from "@/constants/Colors";
