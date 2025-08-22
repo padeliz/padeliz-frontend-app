@@ -1,17 +1,22 @@
 import { StyleSheet, View, Pressable, Text } from 'react-native';
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
+import { FontStyle } from '@/types/types';
 
 type Props = {
   label: string;
+  color: string;
+  width: number;
+  height: number;
+  labelStyle: FontStyle;
 };
 
 // TODO: implement color logic
 
-export default function Button({ label }: Props) {
+export default function Button({ label, width, color, height }: Props) {
   return (
-    <View style={styles.buttonContainer}>
-      <Pressable style={styles.button} onPress={() => alert('You pressed a button.')}>
+    <View style={[styles.buttonContainer, {width: width, height: height}]}>
+      <Pressable style={[styles.button, {backgroundColor: color}]} onPress={() => alert('You pressed a button.')}>
         <Text style={styles.buttonLabel}>{label}</Text>
       </Pressable>
     </View>
@@ -20,15 +25,11 @@ export default function Button({ label }: Props) {
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    width: 326,
-    height: 48,
-    marginHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    borderRadius: 8,
   },
   button: {
-    backgroundColor: Colors.BLUE,
     borderRadius: 8,
     width: '100%',
     height: '100%',

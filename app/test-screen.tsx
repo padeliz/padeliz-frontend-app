@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import Tag from "@/components/Visuals/Tag";
 import EventInfo from "@/components/TextBoxes/EventInfo";
 import EventCard from "@/components/BigComponents/EventCard";
-import { EventDetails } from "@/types/types";
+import { DivisionDetails, EventDetails } from "@/types/types";
 import UpcomingEventDetails from "@/components/BigComponents/UpcomingEventDetails";
 import Step from "@/components/Visuals/Step";
 import Steps from "@/components/Visuals/Steps";
@@ -16,6 +16,10 @@ import FormQuestion from "@/components/BigComponents/FormQuestion";
 import Warning from "@/components/TextBoxes/Warning";
 import PictureDescription from "@/components/Visuals/PictureDescription";
 import ImageSelect from "@/components/Visuals/ImageSelect";
+import Button from "@/components/Buttons/Button";
+import InactiveButton from "@/components/TextBoxes/InactiveButton";
+import DivisionCard from "@/components/Buttons/DivisionCard";
+import ChooseDivision from "@/components/BigComponents/ChooseDivision";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
@@ -34,6 +38,33 @@ export const sampleEvent: EventDetails = {
     organizerName: "Jenn Morel",
     organizerTitle: "Singer and Rapper"
 };
+
+export const sampleDivision: DivisionDetails = {
+    isActive: true,
+    isEligible: true,
+    name: "Students Rookies",
+    price: 45,
+    description: "Nver played padel before or a few times only.",
+    num_spots: 6,
+}
+
+export const sampleDivision2: DivisionDetails = {
+    isActive: false,
+    isEligible: false,
+    name: "Students Rookies",
+    price: 45,
+    description: "Nver played padel before or a few times only.",
+    num_spots: 6,
+}
+
+export const sampleDivision3: DivisionDetails = {
+    isActive: false,
+    isEligible: true,
+    name: "Students Rookies",
+    price: 45,
+    description: "Nver played padel before or a few times only.",
+    num_spots: 6,
+}
 
 export default function HomeScreen() {
     return (
@@ -78,6 +109,11 @@ export default function HomeScreen() {
                 <PictureDescription image={source} />
                 <ImageSelect></ImageSelect>
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={true} tag="Estilo Cochino" isMini={true} />
+
+                <DivisionCard details={sampleDivision} />
+                <DivisionCard details={sampleDivision2} />
+                <DivisionCard details={sampleDivision3} />
+                <ChooseDivision divisions={[sampleDivision, sampleDivision2, sampleDivision3]} />
             </ScrollView>
         </SafeAreaView>
     );

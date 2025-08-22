@@ -33,7 +33,7 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
                         </View>
                     </View>
                 </View>
-                <Button label="See Event" />
+                <Button label="See Event" width={326} color={Colors.BLUE} height={48} labelStyle={Fonts.BOLD_STYLE}/>
             </View>
         );
     }
@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
         width: 358,
         alignContent: "center",
         alignItems: "center",
+        paddingBottom: 20,
     },
     textContainer: {
         paddingLeft: 15,

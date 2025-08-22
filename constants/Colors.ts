@@ -5,7 +5,8 @@
 
 export const BLUE = "#5865f2";
 export const WHITE = "#fff";
-export const CREAM = "#E5E7EB";
+export const CREAM = "#DCDDDE";
+export const CREAM_T = "#DCDDDE60";
 export const GREEN = "#3ba55c";
 export const RED = "#ed4245";
 export const DARK_GRAY = "#2f3136";
