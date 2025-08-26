@@ -1,0 +1,11 @@
+import { WHITE } from "@/constants/Colors";
+import { SafeAreaView, Text, StyleSheet, ScrollView } from "react-native";
+import { SearchBar } from "react-native-screens";
+
+export default function AccountScreen() {
+    return (
+        <SafeAreaView>
+            <Text style={{color: WHITE}}>Here will be your account.</Text>
+        </SafeAreaView>
+    );
+}

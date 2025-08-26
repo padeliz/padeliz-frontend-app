@@ -40,7 +40,10 @@ export default function HomeScreen() {
         return (
             <View>
                 <LoginForm />
-                <Link href="/test-screen" style={styles.button}>See all components.</Link>
+                <View>
+                    <Link href="/test-screen" style={styles.button}>See all components.</Link>
+                    <Link href="/my-events" style={styles.button}>See My Events.</Link>
+                </View>
             </View>
         );
     }

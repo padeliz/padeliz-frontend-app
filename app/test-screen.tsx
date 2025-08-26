@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
+import { StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import Tag from "@/components/Visuals/Tag";
 import EventInfo from "@/components/TextBoxes/EventInfo";
 import EventCard from "@/components/BigComponents/EventCard";
