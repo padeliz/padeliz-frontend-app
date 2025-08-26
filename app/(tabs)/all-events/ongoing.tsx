@@ -1,10 +1,10 @@
 import EventCard from '@/components/BigComponents/EventCard';
 import { DARK_GRAY } from '@/constants/Colors';
-import { StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { Text, View, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 
-const source = require("../../assets/images/estilo-cochino.png");
+const source = require("../../../assets/images/estilo-cochino.png");
 
-export default function AllEventsScreen() {
+export default function AllOngoingEventsScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollableContainer} contentContainerStyle={styles.scrollContent}>
