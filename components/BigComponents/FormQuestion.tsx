@@ -6,24 +6,23 @@ import TextInputBox from "../Misc/TextInputBox";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 import QuestionTitle from "../TextBoxes/QuestionTitle";
+import { FullLabel } from "@/types/types";
 
 type Props = {
     isCheckable: boolean;
     title: string;
     subtitle: string;
-    labels: string[];
-    sublabels: string[];
-    icons: React.ComponentProps<typeof FontAwesome>["name"][];
+    answers: FullLabel[],
 };
 
-export default function FormQuestion({isCheckable, title, subtitle, labels,sublabels, icons}: Props) {
+export default function FormQuestion({isCheckable, title, subtitle, answers}: Props) {
     if (isCheckable) {
         return (
             <ScrollView style={styles.container}>
                 <QuestionTitle title={title} subtitle={subtitle} />
                 <View style={styles.itemsContainer}>  
-                    {labels.map((item, index) => (
-                        <FormCheckbox iconName={icons[index]} label={item} />
+                    {answers.map((item, index) => (
+                        <FormCheckbox iconName={item.icon} label={item.label} />
                     ))};
                 </View>
             </ScrollView>
@@ -34,14 +33,14 @@ export default function FormQuestion({isCheckable, title, subtitle, labels,subla
         <ScrollView style={styles.container}>
             <QuestionTitle title={title} subtitle={subtitle} />
             <View style={styles.itemsContainer}>  
-                {labels.map((item, index) => (
-                    item == "date"? 
-                        <TextInputBox isDate={true} label={item} sublabel={sublabels[index]} /> :
-                        <TextInputBox isDate={false} label={item} sublabel={sublabels[index]} />
+                {answers.map((item, index) => (
+                    item.label == "date"? 
+                        <TextInputBox isDate={true} label={item.label} sublabel={item.sublabel} /> :
+                        <TextInputBox isDate={false} label={item.label} sublabel={item.sublabel} />
                 ))};
             </View>
         </ScrollView>
-        );
+    );
 }
 
 const styles = StyleSheet.create({

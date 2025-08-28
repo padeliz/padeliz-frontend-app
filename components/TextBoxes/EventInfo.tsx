@@ -1,10 +1,12 @@
 import { View, Text, StyleSheet } from "react-native";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Button from "@/components/Buttons/Button";
+import { useRouter } from "expo-router";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
 type Props = {
+    id?: number;
     name: String;
     location: String;
     date: String;
@@ -12,7 +14,9 @@ type Props = {
     mini?: boolean;
 };
 
-export default function EventInfo({ name, location, date, registered, mini }: Props) {
+export default function EventInfo({ name, location, date, registered, mini, id }: Props) {
+    const router = useRouter();
+
     if (!registered) {
         return (
             <View style={styles.container}>
@@ -33,7 +37,14 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
                         </View>
                     </View>
                 </View>
-                <Button label="See Event" width={326} color={Colors.BLUE} height={48} labelStyle={Fonts.BOLD_STYLE}/>
+                <Button
+                    label="See Event"
+                    width={326}
+                    color={Colors.BLUE}
+                    height={48}
+                    labelStyle={Fonts.BOLD_STYLE}
+                    onPress={() => router.push({ pathname: "../../upcoming-event", params: { eventId: id } })}
+                />
             </View>
         );
     }

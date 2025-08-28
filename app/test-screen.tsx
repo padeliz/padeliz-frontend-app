@@ -22,12 +22,14 @@ import DivisionCard from "@/components/Buttons/DivisionCard";
 import ChooseDivision from "@/components/BigComponents/ChooseDivision";
 import PaymentDetails from "@/components/TextBoxes/PaymentDetails";
 import CircleChecker from "@/components/Visuals/CircleChecker";
+import { FullLabel } from "@/types/types";
 
 const source = require("../assets/images/estilo-cochino.png");
 let activities = ["Arriving", "Lottery", "Finals"];
 let times = ["11:30", "12:20 - 15:30", "15:45 - 15:59"];
 
 export const sampleEvent: EventDetails = {
+    id: 1,
     eventImage: source,
     eventName: "ARSH Padel Mini Tour",
     date: "24 aug 2025",
@@ -38,7 +40,10 @@ export const sampleEvent: EventDetails = {
     eventDescription: "Me gustan los puerco', bien perro, bien suelto",
     organizerImage: source,
     organizerName: "Jenn Morel",
-    organizerTitle: "Singer and Rapper"
+    organizerTitle: "Singer and Rapper",
+    isRegistered: true,
+    isEligible: true,
+    isReviewed: true
 };
 
 export const sampleDivision: DivisionDetails = {
@@ -66,6 +71,18 @@ export const sampleDivision3: DivisionDetails = {
     price: 45,
     description: "Nver played padel before or a few times only.",
     num_spots: 6,
+}
+
+const sampleLabel: FullLabel = {
+    label: "Instagram",
+    sublabel: "",
+    icon: "check",
+}
+
+const sampleLabel2: FullLabel = {
+    label: "Name",
+    sublabel: "ex: Andreea",
+    icon: "check",
 }
 
 export default function HomeScreen() {
@@ -99,13 +116,11 @@ export default function HomeScreen() {
                 <TextInputBox isDate={true} label="" sublabel="" />
 
                 <FormQuestion isCheckable={true} title="How did you discover us?"
-                    subtitle="Select where you first heard about Padeliz" labels={["Instagram", "TikTok", "Facebook", "Friends"]}
-                    sublabels={["", "", "", ""]}
-                    icons={["check", "check", "check", "check"]}></FormQuestion>
+                    subtitle="Select where you first heard about Padeliz" answers={[sampleLabel, sampleLabel, sampleLabel, sampleLabel]}>
+
+                </FormQuestion>
                 <FormQuestion isCheckable={false} title="Tell us more about you"
-                    subtitle="It's nice having you here" labels={["first name", "last name", "phone number", "date"]}
-                    sublabels={["ex: Andreea", "ex: Popescu", "ex: +40700000000", ""]}
-                    icons={["check", "check", "check", "check"]}></FormQuestion>
+                    subtitle="It's nice having you here" answers={[sampleLabel2, sampleLabel2]}></FormQuestion>
 
                 <Warning text="If no picture meets the criteria, the eligibility application will be rejected."></Warning>
                 <PictureDescription image={source} />

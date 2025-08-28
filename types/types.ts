@@ -1,4 +1,11 @@
 import { ImageSourcePropType } from "react-native";
+import { FontAwesome } from "@expo/vector-icons";
+
+export type FullLabel = {
+    label: string,
+    sublabel: string,
+    icon: React.ComponentProps<typeof FontAwesome>["name"],
+}
 
 export type FontStyle = {
     color: string;
@@ -8,6 +15,7 @@ export type FontStyle = {
 }
 
 export type EventDetails = {
+    id: number;
     eventImage: ImageSourcePropType;
     eventName: string;
     date: string;
@@ -19,6 +27,18 @@ export type EventDetails = {
     organizerImage: ImageSourcePropType;
     organizerName: string;
     organizerTitle: string;
+    isRegistered: boolean;
+    isEligible: boolean;
+    isReviewed: boolean;
+};
+
+export type EligibilityCheck = {
+    stepLabels: string[],
+    currentStep: number,
+    isCheckable: boolean,
+    question: string,
+    description: string,
+    answers: FullLabel[],
 };
 
 export type DivisionDetails = {

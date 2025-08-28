@@ -8,7 +8,7 @@ export default function AllOngoingEventsScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollableContainer} contentContainerStyle={styles.scrollContent}>
-                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false} tag="Estilo Cochino"/>
+                <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false} tag="Estilo Cochino" />
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false} tag="Estilo Cochino"/>
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false} tag="Estilo Cochino"/>
                 <EventCard name="ARSH Padel Mini Tour" location="Padel ONE" date="24 August 2025" image={source} registered={false} tag="Estilo Cochino"/>

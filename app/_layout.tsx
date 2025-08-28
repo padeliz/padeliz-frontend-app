@@ -28,6 +28,8 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="upcoming-event" options={{headerTitle: "Event Details", headerTitleAlign: "center",}}/>
+          <Stack.Screen name="eligibility-check" options={{headerTitle: "Eligibility Check", headerTitleAlign: "center",}}/>
           <Stack.Screen name="test-screen" />
           <Stack.Screen name="+not-found" />
         </Stack>

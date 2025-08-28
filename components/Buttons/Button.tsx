@@ -2,21 +2,23 @@ import { StyleSheet, View, Pressable, Text } from 'react-native';
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 import { FontStyle } from '@/types/types';
+import Icon from "@expo/vector-icons/FontAwesome";
+import { FontAwesome } from "@expo/vector-icons";
 
 type Props = {
   label: string;
   color: string;
   width: number;
   height: number;
-  labelStyle: FontStyle;
+  labelStyle?: FontStyle;
+  onPress: () => void;
+  icon?: React.ComponentProps<typeof FontAwesome>["name"];
 };
 
-// TODO: implement color logic
-
-export default function Button({ label, width, color, height }: Props) {
+export default function Button({ label, width, color, height, onPress }: Props) {
   return (
     <View style={[styles.buttonContainer, {width: width, height: height}]}>
-      <Pressable style={[styles.button, {backgroundColor: color}]} onPress={() => alert('You pressed a button.')}>
+      <Pressable style={[styles.button, {backgroundColor: color}]} onPress={onPress}>
         <Text style={styles.buttonLabel}>{label}</Text>
       </Pressable>
     </View>
