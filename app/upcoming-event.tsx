@@ -21,9 +21,8 @@ export const sampleEvent: EventDetails = {
     organizerImage: source,
     organizerName: "Jenn Morel",
     organizerTitle: "Singer and Rapper",
-    isRegistered: false,
-    isEligible: false,
-    isReviewed: false,
+    registrationStatus: "not_registered",
+    division: "Student Rookies",
 };
 
 export default function UpcomingEventScreen() {

@@ -85,7 +85,7 @@ export default function EventInfo({ name, location, date, registered, mini, id }
 const styles = StyleSheet.create({
     container: {
         backgroundColor: Colors.GRAY,
-        width: 358,
+        // width: 358,
         alignContent: "center",
         alignItems: "center",
         paddingBottom: 20,

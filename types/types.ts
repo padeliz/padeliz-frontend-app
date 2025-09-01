@@ -14,6 +14,8 @@ export type FontStyle = {
     fontWeight: number;
 }
 
+export type RegistrationStatus = "not_registered" | "eligibility_pending" | "eligible" | "registration_pending" | "registered";
+
 export type EventDetails = {
     id: number;
     eventImage: ImageSourcePropType;
@@ -27,9 +29,8 @@ export type EventDetails = {
     organizerImage: ImageSourcePropType;
     organizerName: string;
     organizerTitle: string;
-    isRegistered: boolean;
-    isEligible: boolean;
-    isReviewed: boolean;
+    registrationStatus: RegistrationStatus;
+    division?: string;
 };
 
 export type EligibilityCheck = {
@@ -39,6 +40,15 @@ export type EligibilityCheck = {
     question: string,
     description: string,
     answers: FullLabel[],
+};
+
+export type RegistrationProcess = {
+    stepLabels: string[],
+    currentStep: number,
+    eventName: string,
+    location: string,
+    date: string,
+    divisions: DivisionDetails[],
 };
 
 export type DivisionDetails = {
