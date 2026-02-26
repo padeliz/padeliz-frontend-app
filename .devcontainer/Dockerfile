@@ -15,7 +15,7 @@ RUN apt-get update && \
 ENV CI=1
 
 # Set working dir
-WORKDIR /workspaces/app-padeliz-front
+WORKDIR /workspaces/padeliz-frontend-app
 
 # Copy only package files for faster layer caching
 COPY package*.json ./

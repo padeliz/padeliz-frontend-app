@@ -1,8 +1,8 @@
 <img src="https://github.com/user-attachments/assets/6ea788c4-f033-45b8-8701-bae663d57119" width="400">
 
-## App Padeliz Front
+## Padeliz App
 
-Expo-based app for https://padeliz.ro
+Expo-based app for https://app.padeliz.ro
 
 
 ## Development Setup (Windows)
@@ -14,7 +14,7 @@ Expo is a React framework for universal native apps — write once for iOS, Andr
 - [Git](https://git-scm.com/downloads)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
 - WSL2 enabled (Windows Subsystem for Linux)
-- A code editor (recommended: [VS Code](https://code.visualstudio.com/))
+- [VS Code](https://code.visualstudio.com/) with the "Dev Containers" extension
 - [Google Cloud Console](https://console.cloud.google.com) project with OAuth 2.0 credentials
 - [Apple Developer Account](https://developer.apple.com/account/)
 
@@ -25,7 +25,7 @@ Expo is a React framework for universal native apps — write once for iOS, Andr
 2. **Clone the repository**
    ```bash
    ## in the VSCode terminal
-   git clone https://github.com/padeliz/app-padeliz-front.git
+   git clone https://github.com/padeliz/padeliz-frontend-app.git
    ```
 
 3. **Open the repository folder in VS Code**
@@ -54,10 +54,10 @@ Press CTRL+` inside VSCode to open the terminal. Make sure you're inside the dev
 
 ```bash
 ## run the app (CI=true, some features disabled)
-npx expo start
+npm start
 
 ## run the app (CI-false, all features enabled, including QR code)
-CI=false npx expo start
+CI=false npm start
 ```
 
 ### Project Structure

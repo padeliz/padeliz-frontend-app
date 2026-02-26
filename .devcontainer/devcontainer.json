@@ -1,5 +1,5 @@
 {
-  "name": "App Padeliz Front (Docker)",
+  "name": "Padeliz App (Expo)",
   "build": {
     "dockerfile": "Dockerfile",
     "context": "..",
@@ -7,7 +7,7 @@
       "NODE_VERSION": "20"
     }
   },
-  "runArgs": ["--name", "app-padeliz-front"],
+  "runArgs": ["--name", "padeliz-frontend-app"],
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "mounts": [
     "source=padeliz_node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume,volume-nocopy",
@@ -28,7 +28,7 @@
     "19002": { "label": "Expo (legacy)" },
     "19006": { "label": "Web" }
   },
-  "postCreateCommand": "git config --global core.autocrlf true && git config --global core.filemode false && git config --global --add safe.directory /workspaces/app-padeliz-front && sudo chown -R node:node ${containerWorkspaceFolder}/node_modules ${containerWorkspaceFolder}/.expo || true && npm install --no-audit --no-fund",
+  "postCreateCommand": "git config --global core.autocrlf true && git config --global core.filemode false && git config --global --add safe.directory /workspaces/padeliz-frontend-app && sudo chown -R node:node ${containerWorkspaceFolder}/node_modules ${containerWorkspaceFolder}/.expo || true && npm install --no-audit --no-fund",
   "postStartCommand": "sudo chown -R node:node ${containerWorkspaceFolder}/node_modules ${containerWorkspaceFolder}/.expo || true",
   "remoteUser": "node",
   "customizations": {

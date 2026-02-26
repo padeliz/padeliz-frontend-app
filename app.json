@@ -1,6 +1,6 @@
 {
     "expo": {
-        "name": "app-padeliz-front",
+        "name": "padeliz-frontend-app",
         "slug": "padeliz",
         "version": "1.0.0",
         "orientation": "portrait",
