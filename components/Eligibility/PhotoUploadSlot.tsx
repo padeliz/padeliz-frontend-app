@@ -11,7 +11,9 @@ type Props = {
   allowsEditing?: boolean;
   aspect?: [number, number];
   label?: string;
+  hint?: string;
   fill?: boolean;
+  fillHeight?: number;
 };
 
 export default function PhotoUploadSlot({
@@ -21,7 +23,9 @@ export default function PhotoUploadSlot({
   allowsEditing = true,
   aspect = [1, 1],
   label,
+  hint,
   fill,
+  fillHeight,
 }: Props) {
   const handlePress = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -37,14 +41,24 @@ export default function PhotoUploadSlot({
   };
 
   return (
-    <Pressable style={[styles.container, fill ? styles.fill : { width: size, height: size }]} onPress={handlePress}>
+    <Pressable
+      style={[
+        styles.container,
+        fill
+          ? fillHeight
+            ? { width: '100%', height: fillHeight }
+            : styles.fill
+          : { width: size, height: size },
+      ]}
+      onPress={handlePress}
+    >
       {uri ? (
         <Image source={{ uri }} style={styles.image} />
       ) : (
         <View style={styles.placeholder}>
           <FontAwesome name="cloud-upload" size={20} color={Colors.CREAM} />
           {label && <Text style={styles.label}>{label}</Text>}
-          <Text style={styles.hint}>PNG, JPG up to 5MB</Text>
+          <Text style={styles.hint}>{hint ?? 'PNG, JPG up to 5MB'}</Text>
         </View>
       )}
     </Pressable>

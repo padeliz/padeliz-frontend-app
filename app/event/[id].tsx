@@ -9,7 +9,7 @@ import { useEvents } from '@/context/events';
 
 const ORGANIZER_IMAGE = require('@/assets/images/events/organizer-arshavin.jpg');
 
-const MOCK_EVENT_DETAILS: Record<string, EventDetails> = {
+export const MOCK_EVENT_DETAILS: Record<string, EventDetails> = {
   '1': {
     eventImage: require('@/assets/images/events/minitour-21.png'),
     eventName: 'ARSH Padel MiniTour #21',
@@ -366,6 +366,7 @@ function getCTA(status: EventStatus, timing: EventTiming): CTAConfig | null {
   if (status === 'registered') return null;
   if (status === 'pending_payment') return { label: 'Pay Now' };
   if (status === 'eligibility_pending') return { label: 'Eligibility Check in Pending', variant: 'orange', showClockIcon: true };
+  if (status === 'registration_pending') return { label: 'Registration Review in Pending', variant: 'orange', showClockIcon: true };
   return { label: 'Register Now' };
 }
 
@@ -484,8 +485,12 @@ export default function EventDetailScreen() {
           <Button
             label={cta.label}
             onPress={() => {
-              if (status === 'none' || status === 'eligibility_pending') {
+              if (status === 'none') {
                 router.push({ pathname: '/event/eligibility-check' as any, params: { eventId: id } });
+              } else if (status === 'eligibility_pending') {
+                router.push({ pathname: '/event/registration' as any, params: { eventId: id } });
+              } else if (status === 'registration_pending') {
+                router.push({ pathname: '/event/registration' as any, params: { eventId: id, initialStep: '4' } });
               }
             }}
             style={cta.variant === 'orange' ? styles.ctaOrange : undefined}

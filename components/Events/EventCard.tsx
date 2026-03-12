@@ -11,6 +11,7 @@ const STATUS_CONFIG: Partial<Record<import('@/types/types').EventStatus, { label
   pending_payment: { label: 'Pending Payment', color: Colors.BLUE },
   registered: { label: 'Registered', color: Colors.BADGE_GREEN },
   eligibility_pending: { label: 'Eligibility Pending', color: Colors.ORANGE },
+  registration_pending: { label: 'Registration Pending', color: Colors.ORANGE },
 };
 
 type Props = {
