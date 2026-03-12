@@ -16,6 +16,10 @@ export const ORANGE_T = "#d4703270";
 export const INACTIVE = "#ADAEBC";
 export const YELLOW = "#e2d459";
 export const YELLOW_T = "#e2d45980";
+export const BLUE_T   = "rgba(88,101,242,0.2)";
+export const GREEN_T  = "rgba(59,165,92,0.2)";
+export const RED_T    = "rgba(237,66,69,0.2)";
+export const CREAM_10 = "rgba(220,221,222,0.1)";
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';

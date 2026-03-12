@@ -1,5 +1,5 @@
 import { Pressable, View, Image } from "react-native";
-import { ThemedText } from "./ThemedText";
+import { ThemedText } from "@/components/ThemedText";
 
 export default function SignInWithGoogleButton({
   onPress,
@@ -24,7 +24,7 @@ export default function SignInWithGoogleButton({
         }}
       >
         <Image
-          source={require("../assets/images/google-icon.png")}
+          source={require("../../assets/images/google-icon.png")}
           style={{
             width: 18,
             height: 18,

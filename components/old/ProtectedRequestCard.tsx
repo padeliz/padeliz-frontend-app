@@ -1,6 +1,6 @@
 import * as React from "react";
 import { View, Button, StyleSheet } from "react-native";
-import { ThemedText } from "./ThemedText";
+import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/auth";
 
 export default function ProtectedRequestCard() {

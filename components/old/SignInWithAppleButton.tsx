@@ -1,6 +1,6 @@
 import { Pressable, View, StyleSheet } from "react-native";
 import { useAuth } from "@/context/auth";
-import { ThemedText } from "./ThemedText";
+import { ThemedText } from "@/components/ThemedText";
 import { Image } from "react-native";
 
 export function SignInWithAppleButton() {
@@ -10,7 +10,7 @@ export function SignInWithAppleButton() {
     <Pressable onPress={signInWithAppleWebBrowser}>
       <View style={styles.container}>
         <Image
-          source={require("../assets/images/apple-icon.png")}
+          source={require("../../assets/images/apple-icon.png")}
           style={styles.icon}
         />
         <ThemedText type="defaultSemiBold" darkColor="#fff" lightColor="#fff">

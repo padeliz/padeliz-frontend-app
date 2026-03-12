@@ -1,9 +1,9 @@
 import { ActivityIndicator } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/context/auth";
-import LoginForm from "@/components/LoginForm";
-import ProfileCard from "@/components/ProfileCard";
-import ProtectedRequestCard from "@/components/ProtectedRequestCard";
+import LoginForm from "@/components/old/LoginForm";
+import ProfileCard from "@/components/old/ProfileCard";
+import ProtectedRequestCard from "@/components/old/ProtectedRequestCard";
 
 // Imports used for displaying components. For final version delete.
 import { Link } from "expo-router";

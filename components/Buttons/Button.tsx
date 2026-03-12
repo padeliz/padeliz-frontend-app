@@ -1,45 +1,53 @@
-import { StyleSheet, View, Pressable, Text } from 'react-native';
-import * as Colors from "@/constants/Colors";
-import * as Fonts from "@/constants/Fonts";
-import { FontStyle } from '@/types/types';
+import { Pressable, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import * as Colors from '@/constants/Colors';
+import * as Fonts from '@/constants/Fonts';
+
+type ButtonVariant = 'primary' | 'secondary' | 'disabled';
 
 type Props = {
   label: string;
-  color: string;
-  width: number;
-  height: number;
-  labelStyle: FontStyle;
+  onPress?: () => void;
+  variant?: ButtonVariant;
+  style?: StyleProp<ViewStyle>;
 };
 
-// TODO: implement color logic
-
-export default function Button({ label, width, color, height }: Props) {
+export default function Button({ label, onPress, variant = 'primary', style }: Props) {
   return (
-    <View style={[styles.buttonContainer, {width: width, height: height}]}>
-      <Pressable style={[styles.button, {backgroundColor: color}]} onPress={() => alert('You pressed a button.')}>
-        <Text style={styles.buttonLabel}>{label}</Text>
-      </Pressable>
-    </View>
+    <Pressable
+      style={[styles.base, variantStyles[variant], style]}
+      onPress={onPress}
+      disabled={variant === 'disabled'}
+    >
+      <Text style={styles.label}>{label}</Text>
+    </Pressable>
   );
 }
 
+const variantStyles = StyleSheet.create({
+  primary: {
+    backgroundColor: Colors.BLUE,
+    opacity: 1,
+  },
+  secondary: {
+    backgroundColor: Colors.CREAM_10,
+  },
+  disabled: {
+    backgroundColor: Colors.BLUE,
+    opacity: 0.5,
+  },
+});
+
 const styles = StyleSheet.create({
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  button: {
-    borderRadius: 8,
+  base: {
     width: '100%',
-    height: '100%',
+    height: 56,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonLabel: {
+  label: {
     color: Colors.WHITE,
-    fontFamily: Fonts.NAME,
+    fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
-    fontWeight: Fonts.MEDIUM,
   },
 });

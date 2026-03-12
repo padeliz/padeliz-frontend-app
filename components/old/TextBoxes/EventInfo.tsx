@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import Button from "@/components/Buttons/Button";
+import Button from "@/components/old/Buttons/Button";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
