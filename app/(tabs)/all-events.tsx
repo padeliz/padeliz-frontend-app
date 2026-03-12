@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import FilterBar from '@/components/Navigation/FilterBar';
@@ -105,6 +106,7 @@ const ALL_EVENTS: EventCardData[] = [
 const TIMING_FILTERS: EventTiming[] = ['upcoming', 'ongoing', 'past'];
 
 export default function AllEventsScreen() {
+  const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState(0);
 
   const filterOptions = useMemo(() => {
@@ -133,7 +135,7 @@ export default function AllEventsScreen() {
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {filteredEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
+          <EventCard key={event.id} event={event} onPress={() => router.push(`/event/${event.id}`)} />
         ))}
       </ScrollView>
     </SafeAreaView>

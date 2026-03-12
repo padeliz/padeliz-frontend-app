@@ -21,6 +21,7 @@ export const GREEN_T  = "rgba(59,165,92,0.2)";
 export const RED_T    = "rgba(237,66,69,0.2)";
 export const CREAM_10 = "rgba(220,221,222,0.1)";
 export const CREAM_60 = "rgba(220,221,222,0.6)";
+export const CREAM_80 = "rgba(220,221,222,0.8)";
 export const CARD_BG = "#40444b";
 export const BADGE_GREEN = "#43b581";
 export const WHITE_05 = "rgba(255,255,255,0.05)";
