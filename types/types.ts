@@ -21,6 +21,19 @@ export type EventDetails = {
     organizerTitle: string;
 };
 
+export type EventStatus = 'pending_payment' | 'registered' | 'none';
+export type EventTiming = 'upcoming' | 'ongoing' | 'past';
+
+export type EventCardData = {
+    id: string;
+    title: string;
+    location: string;
+    date: string;
+    coverImage: ImageSourcePropType;
+    status: EventStatus;
+    timing: EventTiming;
+};
+
 export type DivisionDetails = {
     isActive: boolean;
     isEligible: boolean;

@@ -1,9 +1,8 @@
 import { ActivityIndicator } from "react-native";
+import { Redirect } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/context/auth";
 import LoginScreen from "@/components/Login/LoginScreen";
-import ProfileCard from "@/components/old/ProfileCard";
-import ProtectedRequestCard from "@/components/old/ProtectedRequestCard";
 
 import "@/styles/global.css";
 
@@ -22,17 +21,5 @@ export default function HomeScreen() {
         return <LoginScreen />;
     }
 
-    return (
-        <ThemedView
-            style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 20,
-            }}
-        >
-            <ProfileCard />
-            <ProtectedRequestCard />
-        </ThemedView>
-    );
+    return <Redirect href={{ pathname: "/(tabs)" }} />;
 }

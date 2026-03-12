@@ -20,6 +20,9 @@ export const BLUE_T   = "rgba(88,101,242,0.2)";
 export const GREEN_T  = "rgba(59,165,92,0.2)";
 export const RED_T    = "rgba(237,66,69,0.2)";
 export const CREAM_10 = "rgba(220,221,222,0.1)";
+export const CREAM_60 = "rgba(220,221,222,0.6)";
+export const CARD_BG = "#40444b";
+export const BADGE_GREEN = "#43b581";
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
