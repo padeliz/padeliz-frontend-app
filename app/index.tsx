@@ -1,17 +1,11 @@
 import { ActivityIndicator } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/context/auth";
-import LoginForm from "@/components/old/LoginForm";
+import LoginScreen from "@/components/Login/LoginScreen";
 import ProfileCard from "@/components/old/ProfileCard";
 import ProtectedRequestCard from "@/components/old/ProtectedRequestCard";
 
-// Imports used for displaying components. For final version delete.
-import { Link } from "expo-router";
-import { View } from "react-native";
-import { StyleSheet } from "react-native"; 
-
 import "@/styles/global.css";
-import { createComponentForStaticNavigation } from "@react-navigation/native";
 
 export default function HomeScreen() {
     const { user, isLoading } = useAuth();
@@ -24,30 +18,9 @@ export default function HomeScreen() {
         );
     }
 
-    // Style used for displaying components. For final version delete.
-    const styles = StyleSheet.create({
-        button: {
-            fontSize: 20,
-            textDecorationLine: 'underline',
-            color: '#fff',
-        },
-    });
-
-    
-    {/* Link used for displaying components.
-        For final version uncomment block below this one. */}
     if (!user) {
-        return (
-            <View>
-                <LoginForm />
-                <Link href="/test-screen" style={styles.button}>See all components.</Link>
-            </View>
-        );
+        return <LoginScreen />;
     }
-
-    // if (!user) {
-    //     return <LoginForm />;
-    // }
 
     return (
         <ThemedView
