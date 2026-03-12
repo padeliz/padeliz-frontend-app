@@ -23,6 +23,7 @@ export const CREAM_10 = "rgba(220,221,222,0.1)";
 export const CREAM_60 = "rgba(220,221,222,0.6)";
 export const CARD_BG = "#40444b";
 export const BADGE_GREEN = "#43b581";
+export const WHITE_05 = "rgba(255,255,255,0.05)";
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';

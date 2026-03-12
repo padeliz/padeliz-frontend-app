@@ -1,9 +1,16 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
+import { useAuth } from '@/context/auth';
 
 export default function TabLayout() {
+  const { user, isLoading } = useAuth();
+
+  if (!user && !isLoading) {
+    return <Redirect href="/" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
