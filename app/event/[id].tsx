@@ -5,6 +5,7 @@ import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import Button from '@/components/Buttons/Button';
 import { EventDetails, EventStatus, EventTiming } from '@/types/types';
+import { useEvents } from '@/context/events';
 
 const ORGANIZER_IMAGE = require('@/assets/images/events/organizer-arshavin.jpg');
 
@@ -354,10 +355,17 @@ const MOCK_EVENT_DETAILS: Record<string, EventDetails> = {
   },
 };
 
-function getCTA(status: EventStatus, timing: EventTiming): { label: string } | null {
+type CTAConfig = {
+  label: string;
+  variant?: 'default' | 'orange';
+  showClockIcon?: boolean;
+};
+
+function getCTA(status: EventStatus, timing: EventTiming): CTAConfig | null {
   if (timing === 'ongoing' || timing === 'past') return null;
   if (status === 'registered') return null;
   if (status === 'pending_payment') return { label: 'Pay Now' };
+  if (status === 'eligibility_pending') return { label: 'Eligibility Check in Pending', variant: 'orange', showClockIcon: true };
   return { label: 'Register Now' };
 }
 
@@ -365,6 +373,7 @@ export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
+  const { getEventStatus } = useEvents();
   const event = MOCK_EVENT_DETAILS[id];
 
   const handleBack = () => {
@@ -383,7 +392,8 @@ export default function EventDetailScreen() {
     );
   }
 
-  const cta = getCTA(event.status, event.timing);
+  const status = getEventStatus(id, event.status);
+  const cta = getCTA(status, event.timing);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -471,7 +481,16 @@ export default function EventDetailScreen() {
       {/* CTA */}
       {cta && (
         <View style={styles.ctaBar}>
-          <Button label={cta.label} onPress={() => {}} />
+          <Button
+            label={cta.label}
+            onPress={() => {
+              if (status === 'none' || status === 'eligibility_pending') {
+                router.push({ pathname: '/event/eligibility-check' as any, params: { eventId: id } });
+              }
+            }}
+            style={cta.variant === 'orange' ? styles.ctaOrange : undefined}
+            icon={cta.showClockIcon ? <FontAwesome name="clock-o" size={18} color={Colors.WHITE} /> : undefined}
+          />
         </View>
       )}
     </SafeAreaView>
@@ -646,5 +665,8 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.CREAM_10,
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  ctaOrange: {
+    backgroundColor: Colors.ORANGE,
   },
 });

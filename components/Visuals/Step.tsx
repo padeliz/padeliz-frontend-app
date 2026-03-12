@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function Step({ label, isCompleted, isCurrent, isFinalStep, stepNumber, color }: Props) {
-  const circleColor = isCompleted || isCurrent ? color : Colors.GRAY;
+  const circleColor = isCompleted || isCurrent ? color : Colors.CREAM_20;
   const labelColor  = isCurrent ? color : Colors.CREAM;
 
   return (

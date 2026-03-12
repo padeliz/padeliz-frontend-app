@@ -7,10 +7,11 @@ import { EventCardData } from '@/types/types';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Partial<Record<import('@/types/types').EventStatus, { label: string; color: string }>> = {
   pending_payment: { label: 'Pending Payment', color: Colors.BLUE },
   registered: { label: 'Registered', color: Colors.BADGE_GREEN },
-} as const;
+  eligibility_pending: { label: 'Eligibility Pending', color: Colors.ORANGE },
+};
 
 type Props = {
   event: EventCardData;
@@ -24,7 +25,7 @@ export default function EventCard({ event, onPress }: Props) {
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.imageContainer}>
         <Image source={event.coverImage} style={styles.coverImage} />
-        {event.status !== 'none' && (
+        {status && (
           <View style={[styles.badge, { backgroundColor: status.color }]}>
             <Text style={styles.badgeText}>{status.label}</Text>
           </View>

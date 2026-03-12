@@ -6,6 +6,7 @@ import * as Fonts from '@/constants/Fonts';
 import FilterBar from '@/components/Navigation/FilterBar';
 import EventCard from '@/components/Events/EventCard';
 import { EventCardData, EventTiming } from '@/types/types';
+import { useEvents } from '@/context/events';
 
 const MOCK_EVENTS: EventCardData[] = [
   // Upcoming — mix of registered and pending_payment
@@ -89,6 +90,7 @@ const TIMING_FILTERS: EventTiming[] = ['upcoming', 'ongoing', 'past'];
 
 export default function MyEventsScreen() {
   const router = useRouter();
+  const { getEventStatus } = useEvents();
   const [selectedFilter, setSelectedFilter] = useState(0);
 
   const filterOptions = useMemo(() => {
@@ -117,7 +119,7 @@ export default function MyEventsScreen() {
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {filteredEvents.map((event) => (
-          <EventCard key={event.id} event={event} onPress={() => router.push(`/event/${event.id}`)} />
+          <EventCard key={event.id} event={{ ...event, status: getEventStatus(event.id, event.status) }} onPress={() => router.push(`/event/${event.id}`)} />
         ))}
       </ScrollView>
     </SafeAreaView>

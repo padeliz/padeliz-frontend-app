@@ -12,6 +12,7 @@ import { useFonts, Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@exp
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useEffect } from "react";
 import { AuthProvider } from "@/context/auth";
+import { EventsProvider } from "@/context/events";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -28,16 +29,19 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
+      <EventsProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="event/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="event/eligibility-check" options={{ headerShown: false }} />
           <Stack.Screen name="test-screen" />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
+      </EventsProvider>
     </AuthProvider>
   );
 }

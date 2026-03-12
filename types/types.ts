@@ -27,7 +27,7 @@ export type EventDetails = {
     timing: EventTiming;
 };
 
-export type EventStatus = 'pending_payment' | 'registered' | 'none';
+export type EventStatus = 'pending_payment' | 'registered' | 'none' | 'eligibility_pending';
 export type EventTiming = 'upcoming' | 'ongoing' | 'past';
 
 export type EventCardData = {

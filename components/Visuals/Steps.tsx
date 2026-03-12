@@ -20,7 +20,7 @@ export default function Steps({ labels, currentStep, color = Colors.ORANGE }: Pr
         const lineColor   = stepNumber < currentStep ? color : Colors.GRAY;
 
         return (
-          <View key={label} style={styles.stepRow}>
+          <View key={label} style={[styles.stepRow, isLast && styles.stepRowLast]}>
             <Step
               label={label}
               isCompleted={isCompleted}
@@ -43,16 +43,20 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'center',
     width: '100%',
   },
   stepRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    flex: 1,
+  },
+  stepRowLast: {
+    flexShrink: 0,
   },
   line: {
     flex: 1,
     height: 2,
-    marginTop: 15,  // (32 - 2) / 2 = centers the 2px line on the 32px circle
+    marginTop: 15,
+    minWidth: 32,
   },
 });
