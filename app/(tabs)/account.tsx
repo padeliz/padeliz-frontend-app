@@ -11,6 +11,7 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/auth';
 import Button from '@/components/Buttons/Button';
 
@@ -60,6 +61,7 @@ function InfoCard({
 }
 
 export default function AccountScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const [isStudent, setIsStudent] = useState(MOCK_PROFILE.isStudent);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -213,7 +215,10 @@ export default function AccountScreen() {
         </View>
 
         {/* Sign Out */}
-        <Pressable style={styles.signOutButton} onPress={signOut}>
+        <Pressable style={styles.signOutButton} onPress={async () => {
+          await signOut();
+          router.replace('/');
+        }}>
           <FontAwesome name="sign-out" size={16} color={Colors.RED} />
           <Text style={styles.signOutLabel}>Sign Out</Text>
         </Pressable>
