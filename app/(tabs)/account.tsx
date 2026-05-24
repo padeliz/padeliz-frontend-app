@@ -11,17 +11,8 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
-import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/auth';
 import Button from '@/components/Buttons/Button';
-
-const MOCK_PROFILE = {
-  nickname: 'Cosmologus',
-  userId: '#00001',
-  birthdate: '15 October 1997',
-  phone: '+40 754 797 699',
-  isStudent: false,
-};
 
 const MOCK_EVENT_HISTORY = [
   {
@@ -61,11 +52,16 @@ function InfoCard({
 }
 
 export default function AccountScreen() {
-  const router = useRouter();
   const { user, signOut } = useAuth();
-  const [isStudent, setIsStudent] = useState(MOCK_PROFILE.isStudent);
+  const player = user?.player;
+  const [isStudent, setIsStudent] = useState(!!player?.being_student);
   const [showTooltip, setShowTooltip] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+
+  const nickname = user?.name ?? 'Player';
+  const userId = player ? `#${String(player.id_player).padStart(5, '0')}` : '—';
+  const birthdate = player?.year_of_birth ? String(player.year_of_birth) : 'Not set';
+  const phone = player?.phone ?? 'Not set';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -96,8 +92,8 @@ export default function AccountScreen() {
             </Pressable>
           </View>
           <View style={styles.nicknameContainer}>
-            <Text style={styles.nickname}>{MOCK_PROFILE.nickname}</Text>
-            <Text style={styles.userId}>ID: {MOCK_PROFILE.userId}</Text>
+            <Text style={styles.nickname}>{nickname}</Text>
+            <Text style={styles.userId}>ID: {userId}</Text>
           </View>
         </View>
 
@@ -159,16 +155,8 @@ export default function AccountScreen() {
 
           <View style={styles.infoCards}>
             <InfoCard label="Full Name" value={user?.name ?? 'N/A'} />
-            <InfoCard
-              label="Birthdate"
-              value={MOCK_PROFILE.birthdate}
-              showLock
-            />
-            <InfoCard
-              label="Phone Number"
-              value={MOCK_PROFILE.phone}
-              showLock
-            />
+            <InfoCard label="Birthdate" value={birthdate} showLock />
+            <InfoCard label="Phone Number" value={phone} showLock />
           </View>
 
           <Pressable
@@ -215,10 +203,7 @@ export default function AccountScreen() {
         </View>
 
         {/* Sign Out */}
-        <Pressable style={styles.signOutButton} onPress={async () => {
-          await signOut();
-          router.replace('/');
-        }}>
+        <Pressable style={styles.signOutButton} onPress={() => { void signOut(); }}>
           <FontAwesome name="sign-out" size={16} color={Colors.RED} />
           <Text style={styles.signOutLabel}>Sign Out</Text>
         </Pressable>

@@ -3,7 +3,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -19,29 +19,26 @@ SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
   const colorScheme = useColorScheme();
-  const { user, isLoading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === "(tabs)" || segments[0] === "event";
-
-    if (!user && inAuthGroup) {
-      // User signed out while on a protected screen — redirect to login
-      router.replace("/");
-    }
-  }, [user, isLoading, segments]);
-
+  // Auth gating is declarative: a false `guard` removes those screens from the navigator,
+  // and expo-router falls back to the first remaining screen. Signing out (user -> null)
+  // therefore tears down the tabs/event screens and lands on `index` (login) on its own —
+  // no imperative redirect, so no navigation race or focus-effect loop.
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="event/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="event/eligibility-check" options={{ headerShown: false }} />
-        <Stack.Screen name="event/registration" options={{ headerShown: false }} />
+        <Stack.Protected guard={!user}>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={!!user}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="event/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="event/eligibility-check" options={{ headerShown: false }} />
+          <Stack.Screen name="event/registration" options={{ headerShown: false }} />
+        </Stack.Protected>
+
         <Stack.Screen name="test-screen" />
         <Stack.Screen name="+not-found" />
       </Stack>

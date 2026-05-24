@@ -1,359 +1,23 @@
-import { View, Text, Image, ScrollView, Pressable, StyleSheet, SafeAreaView } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import Button from '@/components/Buttons/Button';
-import { EventDetails, EventStatus, EventTiming } from '@/types/types';
+import { EventStatus, EventTiming } from '@/types/types';
 import { useEvents } from '@/context/events';
-
-const ORGANIZER_IMAGE = require('@/assets/images/events/organizer-arshavin.jpg');
-
-export const MOCK_EVENT_DETAILS: Record<string, EventDetails> = {
-  '1': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'ARSH Padel MiniTour #21',
-    date: '27 April 2025',
-    location: 'Padel One',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:20 - 15:30' },
-      { label: 'Finals', time: '15:45 - 15:59' },
-    ],
-    eventDescription:
-      'We organize padel sessions for beginners. They are dedicated to people who have never played padel before. It\u2019s not individual course, but group games for first-timers. We exercise together through a simple and fun sport.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'pending_payment',
-    timing: 'upcoming',
-  },
-  '2': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'ARSH Padel MiniTour #20',
-    date: '05 April 2025',
-    location: 'Magic Padel',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '10:00' },
-      { label: 'Lottery', time: '10:30 - 14:00' },
-      { label: 'Finals', time: '14:15 - 15:00' },
-    ],
-    eventDescription:
-      'We organize padel sessions for beginners. They are dedicated to people who have never played padel before. It\u2019s not individual course, but group games for first-timers. We exercise together through a simple and fun sport.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'upcoming',
-  },
-  '3': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'Summer Padel Championship',
-    date: '10 May 2025',
-    location: 'Club Deportivo',
-    price: 'RON 50 - 80',
-    schedule: [
-      { label: 'Arriving', time: '09:00' },
-      { label: 'Round Robin', time: '09:30 - 13:00' },
-      { label: 'Finals', time: '13:30 - 15:00' },
-    ],
-    eventDescription:
-      'A summer championship for all skill levels. Join us for a day of competitive padel in a friendly atmosphere.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'upcoming',
-  },
-  '4': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Weekend Padel League',
-    date: '20 April 2025',
-    location: 'Padel Arena',
-    price: 'RON 40 - 60',
-    schedule: [
-      { label: 'Arriving', time: '10:00' },
-      { label: 'Matches', time: '10:30 - 14:00' },
-      { label: 'Finals', time: '14:30 - 16:00' },
-    ],
-    eventDescription:
-      'Weekend league matches for intermediate players. Come join the fun and improve your game!',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'pending_payment',
-    timing: 'upcoming',
-  },
-  '5': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'Spring Padel Open',
-    date: '10 - 22 March 2025',
-    location: 'Club Deportivo',
-    price: 'RON 55 - 85',
-    schedule: [
-      { label: 'Arriving', time: '11:00' },
-      { label: 'Lottery', time: '11:30 - 15:00' },
-      { label: 'Finals', time: '15:30 - 16:30' },
-    ],
-    eventDescription:
-      'The Spring Open is our flagship event. Multiple divisions, exciting matches, and great prizes await!',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'ongoing',
-  },
-  '6': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Winter Padel Cup',
-    date: '10 January 2025',
-    location: 'Padel One',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:00 - 15:00' },
-      { label: 'Finals', time: '15:15 - 16:00' },
-    ],
-    eventDescription:
-      'Our annual winter cup brought together players from across the city for a great day of padel.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'past',
-  },
-  '7': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'ARSH Padel MiniTour #19',
-    date: '15 December 2024',
-    location: 'Magic Padel',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:20 - 15:30' },
-      { label: 'Finals', time: '15:45 - 15:59' },
-    ],
-    eventDescription:
-      'MiniTour #19 was a blast! Great matches and amazing sportsmanship from all participants.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'past',
-  },
-  '8': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Holiday Padel Classic',
-    date: '01 December 2024',
-    location: 'Club Deportivo',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '10:00' },
-      { label: 'Matches', time: '10:30 - 14:00' },
-      { label: 'Finals', time: '14:30 - 15:30' },
-    ],
-    eventDescription:
-      'The Holiday Classic is our end-of-year celebration event. Fun, competitive, and festive!',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'past',
-  },
-  // All Events mock data
-  'a1': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'ARSH Padel MiniTour #22',
-    date: '18 May 2025',
-    location: 'Padel One',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:20 - 15:30' },
-      { label: 'Finals', time: '15:45 - 15:59' },
-    ],
-    eventDescription:
-      'We organize padel sessions for beginners. They are dedicated to people who have never played padel before.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'upcoming',
-  },
-  'a2': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Summer Padel Championship',
-    date: '01 June 2025',
-    location: 'Magic Padel',
-    price: 'RON 50 - 80',
-    schedule: [
-      { label: 'Arriving', time: '09:00' },
-      { label: 'Round Robin', time: '09:30 - 13:00' },
-      { label: 'Finals', time: '13:30 - 15:00' },
-    ],
-    eventDescription:
-      'A summer championship open to all players. Great prizes and exciting matches!',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'none',
-    timing: 'upcoming',
-  },
-  'a3': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'ARSH Padel MiniTour #21',
-    date: '27 April 2025',
-    location: 'Padel One',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:20 - 15:30' },
-      { label: 'Finals', time: '15:45 - 15:59' },
-    ],
-    eventDescription:
-      'We organize padel sessions for beginners. They are dedicated to people who have never played padel before.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'pending_payment',
-    timing: 'upcoming',
-  },
-  'a4': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Weekend Padel League',
-    date: '20 April 2025',
-    location: 'Padel Arena',
-    price: 'RON 40 - 60',
-    schedule: [
-      { label: 'Arriving', time: '10:00' },
-      { label: 'Matches', time: '10:30 - 14:00' },
-      { label: 'Finals', time: '14:30 - 16:00' },
-    ],
-    eventDescription:
-      'Weekend league for all levels. Come play and have fun!',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'none',
-    timing: 'upcoming',
-  },
-  'a5': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'Spring Padel Open',
-    date: '10 - 22 March 2025',
-    location: 'Club Deportivo',
-    price: 'RON 55 - 85',
-    schedule: [
-      { label: 'Arriving', time: '11:00' },
-      { label: 'Lottery', time: '11:30 - 15:00' },
-      { label: 'Finals', time: '15:30 - 16:30' },
-    ],
-    eventDescription:
-      'The Spring Open is our flagship event with multiple divisions.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'ongoing',
-  },
-  'a6': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'City Padel Series',
-    date: '01 - 15 March 2025',
-    location: 'Padel Arena',
-    price: 'RON 45 - 70',
-    schedule: [
-      { label: 'Arriving', time: '10:00' },
-      { label: 'Matches', time: '10:30 - 14:00' },
-      { label: 'Finals', time: '14:30 - 16:00' },
-    ],
-    eventDescription:
-      'City-wide padel series with players from all over.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'none',
-    timing: 'ongoing',
-  },
-  'a7': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'Corporate Padel Cup',
-    date: '05 - 20 March 2025',
-    location: 'Magic Padel',
-    price: 'RON 50 - 75',
-    schedule: [
-      { label: 'Arriving', time: '09:00' },
-      { label: 'Matches', time: '09:30 - 13:00' },
-      { label: 'Finals', time: '13:30 - 15:00' },
-    ],
-    eventDescription:
-      'Corporate tournament for companies and their teams.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'none',
-    timing: 'ongoing',
-  },
-  'a8': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Winter Padel Cup',
-    date: '10 January 2025',
-    location: 'Padel One',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:00 - 15:00' },
-      { label: 'Finals', time: '15:15 - 16:00' },
-    ],
-    eventDescription:
-      'Annual winter cup with great competition and prizes.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'registered',
-    timing: 'past',
-  },
-  'a9': {
-    eventImage: require('@/assets/images/events/minitour-21.png'),
-    eventName: 'ARSH Padel MiniTour #19',
-    date: '15 December 2024',
-    location: 'Magic Padel',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '11:30' },
-      { label: 'Lottery', time: '12:20 - 15:30' },
-      { label: 'Finals', time: '15:45 - 15:59' },
-    ],
-    eventDescription:
-      'MiniTour #19 was a blast with amazing sportsmanship.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'none',
-    timing: 'past',
-  },
-  'a10': {
-    eventImage: require('@/assets/images/events/minitour-20.png'),
-    eventName: 'Holiday Padel Classic',
-    date: '01 December 2024',
-    location: 'Club Deportivo',
-    price: 'RON 45 - 75',
-    schedule: [
-      { label: 'Arriving', time: '10:00' },
-      { label: 'Matches', time: '10:30 - 14:00' },
-      { label: 'Finals', time: '14:30 - 15:30' },
-    ],
-    eventDescription:
-      'End-of-year celebration event with festive vibes.',
-    organizerImage: ORGANIZER_IMAGE,
-    organizerName: 'Arshavin',
-    organizerTitle: 'Tournament Director',
-    status: 'none',
-    timing: 'past',
-  },
-};
+import { useEdition } from '@/services/hooks/useEditions';
+import { useEligibilityLatest, useEligibilityStatus } from '@/services/hooks/useEligibility';
+import { editionToDetails } from '@/services/mappers';
 
 type CTAConfig = {
   label: string;
@@ -375,7 +39,14 @@ export default function EventDetailScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { getEventStatus } = useEvents();
-  const event = MOCK_EVENT_DETAILS[id];
+
+  const editionId = Number(id);
+  const { data: edition, loading } = useEdition(editionId);
+  // /status is always 200; only fetch /latest (which 404s when none) if a pending exists.
+  const { data: eligibilityStatus } = useEligibilityStatus();
+  const { data: latest } = useEligibilityLatest(
+    eligibilityStatus?.latest === 'pending'
+  );
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -385,29 +56,53 @@ export default function EventDetailScreen() {
     }
   };
 
-  if (!event) {
+  const Header = (
+    <View style={styles.header}>
+      <Pressable onPress={handleBack} style={styles.headerButton}>
+        <FontAwesome name="chevron-left" size={16} color={Colors.WHITE} />
+      </Pressable>
+      <Text style={styles.headerTitle}>Event Details</Text>
+      <Pressable style={styles.headerButton}>
+        <FontAwesome name="share-square-o" size={18} color={Colors.WHITE} />
+      </Pressable>
+    </View>
+  );
+
+  if (loading && !edition) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Text style={styles.title}>Event not found</Text>
+        {Header}
+        <View style={styles.centered}>
+          <ActivityIndicator color={Colors.BLUE} />
+        </View>
       </SafeAreaView>
     );
   }
 
-  const status = getEventStatus(id, event.status);
+  if (!edition) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {Header}
+        <View style={styles.centered}>
+          <Text style={styles.title}>Event not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // The player has at most one pending eligibility; it applies to this event only if
+  // this edition is in its edition_ids. Events context overlays optimistic updates.
+  const baseStatus: EventStatus =
+    latest?.review_status === 'pending' && latest.edition_ids?.includes(editionId)
+      ? 'eligibility_pending'
+      : 'none';
+  const status = getEventStatus(id, baseStatus);
+  const event = editionToDetails(edition, status);
   const cta = getCTA(status, event.timing);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={handleBack} style={styles.headerButton}>
-          <FontAwesome name="chevron-left" size={16} color={Colors.WHITE} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Event Details</Text>
-        <Pressable style={styles.headerButton}>
-          <FontAwesome name="share-square-o" size={18} color={Colors.WHITE} />
-        </Pressable>
-      </View>
+      {Header}
 
       {/* Content */}
       <ScrollView
@@ -450,17 +145,19 @@ export default function EventDetailScreen() {
           </View>
 
           {/* Schedule */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Schedule</Text>
-            <View style={styles.scheduleCard}>
-              {event.schedule.map((item, index) => (
-                <View key={index} style={styles.scheduleRow}>
-                  <Text style={styles.scheduleLabel}>{item.label}</Text>
-                  <Text style={styles.scheduleTime}>{item.time}</Text>
-                </View>
-              ))}
+          {event.schedule.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Schedule</Text>
+              <View style={styles.scheduleCard}>
+                {event.schedule.map((item, index) => (
+                  <View key={index} style={styles.scheduleRow}>
+                    <Text style={styles.scheduleLabel}>{item.label}</Text>
+                    <Text style={styles.scheduleTime}>{item.time}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
 
           {/* About */}
           <View style={styles.section}>
@@ -528,6 +225,11 @@ const styles = StyleSheet.create({
     fontSize: Fonts.HEADING_3,
     lineHeight: 18,
     color: Colors.WHITE,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,

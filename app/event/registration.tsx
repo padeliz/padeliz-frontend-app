@@ -11,7 +11,9 @@ import StepPayment from '@/components/Registration/StepPayment';
 import StepProof from '@/components/Registration/StepProof';
 import StepPending from '@/components/Registration/StepPending';
 import { useEvents } from '@/context/events';
-import { MOCK_EVENT_DETAILS } from '@/app/event/[id]';
+import { MOCK_EVENT_DETAILS } from '@/components/Registration/mockEventDetails';
+import { getCachedEdition } from '@/services/editions';
+import { editionToDetails } from '@/services/mappers';
 import { DivisionDetails } from '@/types/types';
 
 // ---------- Mock divisions ----------
@@ -115,7 +117,13 @@ export default function RegistrationScreen() {
   const [currentStep, setCurrentStep] = useState(initialStep ? parseInt(initialStep, 10) : 1);
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const event = eventId ? MOCK_EVENT_DETAILS[eventId] : undefined;
+  // Prefer the real cached edition; fall back to mock for the old demo ids.
+  const cachedEdition = eventId ? getCachedEdition(Number(eventId)) : undefined;
+  const event = cachedEdition
+    ? editionToDetails(cachedEdition)
+    : eventId
+      ? MOCK_EVENT_DETAILS[eventId]
+      : undefined;
 
   if (!event) {
     return (

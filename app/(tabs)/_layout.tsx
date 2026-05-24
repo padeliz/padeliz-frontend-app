@@ -1,16 +1,13 @@
-import { Tabs, Redirect } from 'expo-router';
+import { Tabs } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
-import { useAuth } from '@/context/auth';
 
+// Signed-out users are redirected by the passive auth gate in app/_layout.tsx.
+// We intentionally do NOT redirect here: expo-router's <Redirect> calls
+// router.replace inside useFocusEffect with an un-memoized callback, which re-fires
+// every render while focused and causes an infinite navigation loop on sign-out.
 export default function TabLayout() {
-  const { user, isLoading } = useAuth();
-
-  if (!user && !isLoading) {
-    return <Redirect href="/" />;
-  }
-
   return (
     <Tabs
       screenOptions={{

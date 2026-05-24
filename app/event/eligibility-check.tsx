@@ -1,4 +1,4 @@
-import { useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -11,7 +11,17 @@ import StepSports from '@/components/Eligibility/StepSports';
 import StepDetails from '@/components/Eligibility/StepDetails';
 import StepPhotos from '@/components/Eligibility/StepPhotos';
 import StepReview from '@/components/Eligibility/StepReview';
+import StatusBanner from '@/components/Feedback/StatusBanner';
 import { useEvents } from '@/context/events';
+import { useEligibilityLatest } from '@/services/hooks/useEligibility';
+import {
+  fetchEligibilityLatest,
+  patchPending,
+  uploadPortraitPhoto,
+  uploadStudentProof,
+} from '@/services/eligibility';
+import { buildPatchPendingBody, hydrateFromEligibility } from '@/services/eligibilityMaps';
+import { ApiError } from '@/services/apiError';
 
 // ---------- State types ----------
 
@@ -56,6 +66,7 @@ export type FormAction =
   | { type: 'SET_SPORT_EXPERIENCE'; sport: string; experience: Partial<SportExperience> }
   | { type: 'SET_FIELD'; field: keyof EligibilityFormState; value: any }
   | { type: 'SET_AVATAR_PHOTO'; index: number; uri: string }
+  | { type: 'HYDRATE'; payload: Partial<EligibilityFormState> }
   | { type: 'SUBMIT' };
 
 // ---------- Reducer ----------
@@ -124,6 +135,8 @@ function reducer(state: EligibilityFormState, action: FormAction): EligibilityFo
       photos[action.index] = action.uri;
       return { ...state, avatarPhotos: photos };
     }
+    case 'HYDRATE':
+      return { ...state, ...action.payload };
     case 'SUBMIT':
       return { ...state, submittedAt: new Date().toISOString() };
     default:
@@ -145,12 +158,36 @@ const STEP_NAV: Record<number, { back?: string; forward?: string }> = {
 
 // ---------- Component ----------
 
+function submitErrorMessage(e: unknown): string {
+  if (e instanceof ApiError) {
+    return e.firstValidationMessage ?? e.message;
+  }
+  return 'Something went wrong. Please try again.';
+}
+
 export default function EligibilityCheckScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
   const { setEventStatus } = useEvents();
   const [currentStep, setCurrentStep] = useState(1);
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Prefill from the player's most recent eligibility (any status). For a non-pending
+  // record we pass its id as duplicate_id so the backend clones its uploads.
+  const { data: latest } = useEligibilityLatest();
+  const duplicateIdRef = useRef<number | undefined>(undefined);
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!latest || hydratedRef.current) return;
+    hydratedRef.current = true;
+    dispatch({ type: 'HYDRATE', payload: hydrateFromEligibility(latest) });
+    if (latest.review_status !== 'pending') {
+      duplicateIdRef.current = latest.id_eligibility;
+    }
+  }, [latest]);
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -160,12 +197,57 @@ export default function EligibilityCheckScreen() {
     }
   };
 
-  const handleForward = () => {
-    if (currentStep === 4) {
-      console.log('=== Eligibility Form Submission ===', JSON.stringify(state, null, 2));
+  const submitEligibility = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      // The backend keeps ONE pending record per player covering a set of editions, and
+      // PATCH replaces edition_ids. Union the current event with whatever the pending
+      // record already covers so submitting for one event doesn't drop the others.
+      let existingEditionIds: number[] = [];
+      try {
+        const current = await fetchEligibilityLatest();
+        if (current?.review_status === 'pending') {
+          existingEditionIds = current.edition_ids ?? [];
+        }
+      } catch {
+        // ignore — fall back to just this event
+      }
+      const editionIds = eventId
+        ? Array.from(new Set([...existingEditionIds, Number(eventId)]))
+        : existingEditionIds;
+
+      const body = buildPatchPendingBody(state, editionIds);
+      await patchPending(body, duplicateIdRef.current);
+
+      // Student proofs require being_student=true on the pending record (set above).
+      if (state.isStudent) {
+        const proofs = [state.studentIdFront, state.studentIdBack].filter(
+          (u): u is string => !!u
+        );
+        for (const uri of proofs.slice(0, 3)) {
+          await uploadStudentProof(uri);
+        }
+      }
+
+      const portraits = state.avatarPhotos.filter((u): u is string => !!u);
+      for (const uri of portraits.slice(0, 3)) {
+        await uploadPortraitPhoto(uri);
+      }
+
       if (eventId) setEventStatus(eventId, 'eligibility_pending');
       dispatch({ type: 'SUBMIT' });
       setCurrentStep(5);
+    } catch (e) {
+      setSubmitError(submitErrorMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForward = () => {
+    if (currentStep === 4) {
+      void submitEligibility();
     } else if (currentStep === 5) {
       if (eventId) {
         router.replace(`/event/${eventId}` as any);
@@ -197,6 +279,9 @@ export default function EligibilityCheckScreen() {
 
       {/* Content */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {submitError && (
+          <StatusBanner variant="error" message={submitError} style={styles.errorBanner} />
+        )}
         {currentStep === 1 && <StepSource state={state} dispatch={dispatch} />}
         {currentStep === 2 && <StepSports state={state} dispatch={dispatch} />}
         {currentStep === 3 && <StepDetails state={state} dispatch={dispatch} />}
@@ -208,8 +293,9 @@ export default function EligibilityCheckScreen() {
       <StepNavButtons
         onBack={nav.back ? handleBack : undefined}
         backLabel={nav.back}
-        onForward={nav.forward ? handleForward : undefined}
-        forwardLabel={nav.forward}
+        onForward={nav.forward && !submitting ? handleForward : undefined}
+        forwardLabel={submitting ? 'Submitting…' : nav.forward}
+        forwardDisabled={submitting}
         isFinalForward={currentStep === 5}
       />
     </SafeAreaView>
@@ -251,5 +337,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  errorBanner: {
+    marginTop: 12,
   },
 });

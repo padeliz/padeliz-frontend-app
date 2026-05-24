@@ -1,111 +1,85 @@
-import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+} from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import FilterBar from '@/components/Navigation/FilterBar';
 import EventCard from '@/components/Events/EventCard';
-import { EventCardData, EventTiming } from '@/types/types';
-import { useEvents } from '@/context/events';
-
-const MOCK_EVENTS: EventCardData[] = [
-  // Upcoming — mix of registered and pending_payment
-  {
-    id: '1',
-    title: 'ARSH Padel MiniTour #21',
-    location: 'Padel One',
-    date: '27 April 2025',
-    coverImage: require('@/assets/images/events/minitour-21.png'),
-    status: 'pending_payment',
-    timing: 'upcoming',
-  },
-  {
-    id: '2',
-    title: 'ARSH Padel MiniTour #20',
-    location: 'Magic Padel',
-    date: '05 April 2025',
-    coverImage: require('@/assets/images/events/minitour-20.png'),
-    status: 'registered',
-    timing: 'upcoming',
-  },
-  {
-    id: '3',
-    title: 'Summer Padel Championship',
-    location: 'Club Deportivo',
-    date: '10 May 2025',
-    coverImage: require('@/assets/images/events/minitour-21.png'),
-    status: 'registered',
-    timing: 'upcoming',
-  },
-  {
-    id: '4',
-    title: 'Weekend Padel League',
-    location: 'Padel Arena',
-    date: '20 April 2025',
-    coverImage: require('@/assets/images/events/minitour-20.png'),
-    status: 'pending_payment',
-    timing: 'upcoming',
-  },
-  // Ongoing — exactly 1 event, registered
-  {
-    id: '5',
-    title: 'Spring Padel Open',
-    location: 'Club Deportivo',
-    date: '10 - 22 March 2025',
-    coverImage: require('@/assets/images/events/minitour-21.png'),
-    status: 'registered',
-    timing: 'ongoing',
-  },
-  // Past — 3 events, all registered
-  {
-    id: '6',
-    title: 'Winter Padel Cup',
-    location: 'Padel One',
-    date: '10 January 2025',
-    coverImage: require('@/assets/images/events/minitour-20.png'),
-    status: 'registered',
-    timing: 'past',
-  },
-  {
-    id: '7',
-    title: 'ARSH Padel MiniTour #19',
-    location: 'Magic Padel',
-    date: '15 December 2024',
-    coverImage: require('@/assets/images/events/minitour-21.png'),
-    status: 'registered',
-    timing: 'past',
-  },
-  {
-    id: '8',
-    title: 'Holiday Padel Classic',
-    location: 'Club Deportivo',
-    date: '01 December 2024',
-    coverImage: require('@/assets/images/events/minitour-20.png'),
-    status: 'registered',
-    timing: 'past',
-  },
-];
+import {
+  useEligibilityStatus,
+  useEligibilityLatest,
+} from '@/services/hooks/useEligibility';
+import { primeEditionCache } from '@/services/editions';
+import { classifyTiming } from '@/services/dateRange';
+import { editionToCard } from '@/services/mappers';
+import type { Edition } from '@/types/api';
+import type { EventTiming } from '@/types/types';
 
 const TIMING_FILTERS: EventTiming[] = ['upcoming', 'ongoing', 'past'];
 
+// "My Events" lists the events the player applied for via an eligibility check
+// (the pending eligibility's edition_ids), split into Upcoming / Ongoing / Past.
 export default function MyEventsScreen() {
   const router = useRouter();
-  const { getEventStatus } = useEvents();
   const [selectedFilter, setSelectedFilter] = useState(0);
 
-  const filterOptions = useMemo(() => {
-    const ongoingCount = MOCK_EVENTS.filter((e) => e.timing === 'ongoing').length;
-    return [
-      { label: 'Upcoming' },
-      { label: 'Ongoing', count: ongoingCount },
-      { label: 'Past' },
-    ];
-  }, []);
+  const { data: status, loading: statusLoading, refetch: refetchStatus } =
+    useEligibilityStatus();
+  const isPending = status?.latest === 'pending';
+  const { data: latest, loading: latestLoading, refetch: refetchLatest } =
+    useEligibilityLatest(isPending);
 
-  const filteredEvents = useMemo(() => {
-    const timing = TIMING_FILTERS[selectedFilter];
-    return MOCK_EVENTS.filter((e) => e.timing === timing);
-  }, [selectedFilter]);
+  // Editions are embedded in the eligibility response (no by-id lookup needed).
+  const editions = useMemo<Edition[]>(
+    () => (isPending ? latest?.editions ?? [] : []),
+    [isPending, latest]
+  );
+
+  // Seed the cache so tapping a card opens Event Details instantly.
+  useEffect(() => {
+    if (editions.length) primeEditionCache(editions);
+  }, [editions]);
+
+  // Refresh on focus so a newly-submitted eligibility shows up here.
+  useFocusEffect(
+    useCallback(() => {
+      refetchStatus();
+      if (isPending) refetchLatest();
+    }, [refetchStatus, refetchLatest, isPending])
+  );
+
+  const buckets = useMemo(() => {
+    const result: Record<EventTiming, Edition[]> = {
+      upcoming: [],
+      ongoing: [],
+      past: [],
+    };
+    for (const e of editions) result[classifyTiming(e.date)].push(e);
+    return result;
+  }, [editions]);
+
+  const filterOptions = useMemo(
+    () => [
+      { label: 'Upcoming' },
+      { label: 'Ongoing', count: buckets.ongoing.length || undefined },
+      { label: 'Past' },
+    ],
+    [buckets.ongoing.length]
+  );
+
+  const loading = statusLoading || (isPending && latestLoading);
+  const total = editions.length;
+  const timing = TIMING_FILTERS[selectedFilter];
+  const cards = buckets[timing].map((e) =>
+    editionToCard(e, 'eligibility_pending')
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -117,11 +91,30 @@ export default function MyEventsScreen() {
         selectedIndex={selectedFilter}
         onSelect={setSelectedFilter}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {filteredEvents.map((event) => (
-          <EventCard key={event.id} event={{ ...event, status: getEventStatus(event.id, event.status) }} onPress={() => router.push(`/event/${event.id}`)} />
-        ))}
-      </ScrollView>
+
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={Colors.BLUE} />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {cards.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {total === 0
+                ? 'No events yet. Apply for an event’s eligibility check and it’ll appear here while under review.'
+                : `No ${timing} events.`}
+            </Text>
+          ) : (
+            cards.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onPress={() => router.push(`/event/${event.id}`)}
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -134,15 +127,29 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderBottomWidth: 0,
   },
   headerTitle: {
     fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.SCREEN_TITLE,
     color: Colors.WHITE,
   },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
   scrollContent: {
     padding: 16,
     gap: 16,
+  },
+  emptyText: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY,
+    color: Colors.CREAM_60,
+    textAlign: 'center',
+    marginTop: 48,
+    lineHeight: 22,
+    paddingHorizontal: 16,
   },
 });

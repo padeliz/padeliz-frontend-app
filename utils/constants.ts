@@ -33,6 +33,10 @@ export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 export const APP_SCHEME = process.env.EXPO_PUBLIC_SCHEME;
 export const JWT_SECRET = process.env.JWT_SECRET!;
 
+// Laravel API base (e.g. http://localhost:8000/api/v1). All backend calls go here.
+export const API_URL =
+    process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+
 // Cookie Settings
 export const COOKIE_OPTIONS = {
     httpOnly: true,

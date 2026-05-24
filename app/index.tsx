@@ -1,13 +1,15 @@
 import { ActivityIndicator } from "react-native";
-import { Redirect } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/context/auth";
 import LoginScreen from "@/components/Login/LoginScreen";
 
 import "@/styles/global.css";
 
+// Only reachable when signed out — the `guard` in app/_layout.tsx removes this screen
+// once a user exists. While the persisted session is still being restored we show a
+// spinner so a returning user never flashes the login screen.
 export default function HomeScreen() {
-    const { user, isLoading } = useAuth();
+    const { isLoading } = useAuth();
 
     if (isLoading) {
         return (
@@ -17,9 +19,5 @@ export default function HomeScreen() {
         );
     }
 
-    if (!user) {
-        return <LoginScreen />;
-    }
-
-    return <Redirect href={{ pathname: "/(tabs)" }} />;
+    return <LoginScreen />;
 }

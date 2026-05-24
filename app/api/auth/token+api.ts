@@ -121,6 +121,8 @@ export async function POST(request: Request) {
       success: true,
       issuedAt: issuedAt,
       expiresAt: issuedAt + COOKIE_MAX_AGE,
+      // Surface the Google id_token so the client can authenticate against Laravel.
+      googleIdToken: data.id_token,
     });
 
     // Set the access token in an HTTP-only cookie
@@ -152,5 +154,7 @@ export async function POST(request: Request) {
   return Response.json({
     accessToken,
     refreshToken,
+    // Surface the Google id_token so the client can authenticate against Laravel.
+    googleIdToken: data.id_token,
   });
 }
