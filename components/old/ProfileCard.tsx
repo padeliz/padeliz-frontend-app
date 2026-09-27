@@ -1,4 +1,4 @@
-import { ThemedText } from "./ThemedText";
+import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/auth";
 import { Button, Image, Platform, StyleSheet, View } from "react-native";
 import { useState, useEffect, useRef } from "react";

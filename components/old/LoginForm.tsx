@@ -1,11 +1,11 @@
-import { ThemedView } from "./ThemedView";
-import { ThemedText } from "./ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/auth";
 import SignInWithGoogleButton from "./SignInWithGoogleButton";
 import { Image, useColorScheme, View, StyleSheet } from "react-native";
 import { SignInWithAppleButton } from "./SignInWithAppleButton";
 
-export default function LoginFormV2() {
+export default function LoginForm() {
     const { signIn, isLoading } = useAuth();
     const theme = useColorScheme();
 

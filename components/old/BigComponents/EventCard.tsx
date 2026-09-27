@@ -1,6 +1,6 @@
 import { View, StyleSheet, ImageBackground, Image, ImageSourcePropType } from "react-native";
-import Tag from "@/components/Visuals/Tag";
-import EventInfo from "@/components/TextBoxes/EventInfo";
+import Tag from "@/components/old/Visuals/Tag";
+import EventInfo from "@/components/old/TextBoxes/EventInfo";
 import { BLUE, GRAY } from "@/constants/Colors";
 
 type Props = {

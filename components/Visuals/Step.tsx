@@ -1,67 +1,61 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import * as Colors from "@/constants/Colors";
-import * as Fonts from "@/constants/Fonts";
+import * as Colors from '@/constants/Colors';
+import * as Fonts from '@/constants/Fonts';
 
 type Props = {
-    isCompleted: boolean;
-    isCurrent: boolean;
-    number: number;
-    color: string;
-    label: String
+  label: string;
+  isCompleted: boolean;
+  isCurrent: boolean;
+  isFinalStep: boolean;
+  stepNumber: number;
+  color: string;
 };
 
-export default function({isCompleted, isCurrent, number, color, label}: Props) {
-    const backgroundColor = color;
-    if (isCompleted && !isCurrent) {
-        return (
-            <View style={styles.container}>
-                <View style={[styles.circle, {backgroundColor}]}>
-                    <FontAwesome name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
-                </View>
-                <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
-            </View>
-        );
-    }
+export default function Step({ label, isCompleted, isCurrent, isFinalStep, stepNumber, color }: Props) {
+  const circleColor = isCompleted || isCurrent ? color : Colors.CREAM_20;
+  const labelColor  = isCurrent ? color : Colors.CREAM;
 
-    if (isCurrent) {
-        return (
-            <View style={styles.container}>
-                <View style={[styles.circle, {backgroundColor}]}>
-                    <Text style={[styles.text, {fontSize: Fonts.BODY_S, color: Colors.WHITE}]}>{number}</Text>
-                </View>
-                <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
-            </View>
-        );
-    }
-
-    return (
-            <View style={styles.container}>
-                <View style={[styles.circle, {backgroundColor: Colors.GRAY}]}>
-                    <Text style={[styles.text, {fontSize: Fonts.BODY_S, color: Colors.WHITE}]}>{number}</Text>
-                </View>
-                <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
-            </View>
-        );
+  return (
+    <View style={styles.container}>
+      <View style={[styles.circle, { backgroundColor: circleColor }]}>
+        {isCompleted && (
+          <FontAwesome name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
+        )}
+        {isCurrent && isFinalStep && (
+          <FontAwesome name="flag" size={Fonts.BODY_S} color={Colors.WHITE} />
+        )}
+        {isCurrent && !isFinalStep && (
+          <Text style={styles.number}>{stepNumber}</Text>
+        )}
+        {!isCompleted && !isCurrent && (
+          <Text style={styles.number}>{stepNumber}</Text>
+        )}
+      </View>
+      <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        alignContent: "center",
-        alignItems: "center",
-    },
-    circle: {
-        width: 32,
-        height: 32,
-        borderRadius: 9999,
-        alignContent: "center",
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 5,
-        marginBottom: 5,
-    },
-    text: {
-        fontFamily: Fonts.NAME,
-        fontWeight: Fonts.REGULAR,
-    }
+  container: {
+    alignItems: 'center',
+  },
+  circle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  number: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY_S,
+    color: Colors.WHITE,
+  },
+  label: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY_XS,
+    marginTop: 8,
+  },
 });

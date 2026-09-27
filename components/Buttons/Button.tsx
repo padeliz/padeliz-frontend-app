@@ -1,45 +1,63 @@
-import { StyleSheet, View, Pressable, Text } from 'react-native';
-import * as Colors from "@/constants/Colors";
-import * as Fonts from "@/constants/Fonts";
-import { FontStyle } from '@/types/types';
+import { Pressable, Text, View, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import * as Colors from '@/constants/Colors';
+import * as Fonts from '@/constants/Fonts';
+
+type ButtonVariant = 'primary' | 'secondary' | 'disabled';
 
 type Props = {
   label: string;
-  color: string;
-  width: number;
-  height: number;
-  labelStyle: FontStyle;
+  onPress?: () => void;
+  variant?: ButtonVariant;
+  style?: StyleProp<ViewStyle>;
+  icon?: React.ReactNode;
+  labelStyle?: StyleProp<TextStyle>;
 };
 
-// TODO: implement color logic
-
-export default function Button({ label, width, color, height }: Props) {
+export default function Button({ label, onPress, variant = 'primary', style, icon, labelStyle }: Props) {
   return (
-    <View style={[styles.buttonContainer, {width: width, height: height}]}>
-      <Pressable style={[styles.button, {backgroundColor: color}]} onPress={() => alert('You pressed a button.')}>
-        <Text style={styles.buttonLabel}>{label}</Text>
-      </Pressable>
-    </View>
+    <Pressable
+      style={[styles.base, variantStyles[variant], style]}
+      onPress={onPress}
+      disabled={variant === 'disabled'}
+    >
+      <View style={styles.content}>
+        {icon}
+        <Text style={[styles.label, labelStyle]}>{label}</Text>
+      </View>
+    </Pressable>
   );
 }
 
+const variantStyles = StyleSheet.create({
+  primary: {
+    backgroundColor: Colors.BLUE,
+    opacity: 1,
+  },
+  secondary: {
+    backgroundColor: Colors.CREAM_10,
+  },
+  disabled: {
+    backgroundColor: Colors.BLUE,
+    opacity: 0.5,
+  },
+});
+
 const styles = StyleSheet.create({
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  button: {
-    borderRadius: 8,
+  base: {
     width: '100%',
-    height: '100%',
+    height: 56,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonLabel: {
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  label: {
     color: Colors.WHITE,
-    fontFamily: Fonts.NAME,
+    fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
-    fontWeight: Fonts.MEDIUM,
   },
 });

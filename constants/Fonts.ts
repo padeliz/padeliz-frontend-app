@@ -1,7 +1,11 @@
 import * as Colors from "./Colors";
 
-export const NAME = "sans-serif";
+export const FONT_REGULAR = 'Inter_400Regular';
+export const FONT_MEDIUM  = 'Inter_500Medium';
+export const FONT_BOLD    = 'Inter_700Bold';
+export const NAME = FONT_REGULAR; // backwards compat alias
 
+export const SCREEN_TITLE = 22;
 export const HEADING_1 = 24;
 export const HEADING_2 = 20;
 export const HEADING_3 = 18;
