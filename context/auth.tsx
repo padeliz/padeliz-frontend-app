@@ -27,8 +27,17 @@ import {
 } from "@/services/apiClient";
 import { ApiError } from "@/services/apiError";
 import { getToken, saveToken, deleteToken } from "@/services/tokenStorage";
+import { clearPushToken, syncPushToken } from "@/services/push";
+import { flushReferralQueue } from "@/services/referralQueue";
 import { BASE_URL } from "@/utils/constants";
+import { linkGoogleIdentity as apiLinkGoogleIdentity } from "@/services/identities";
+import {
+  mapPlayerToUser,
+  type AppUser,
+} from "@/services/authUser";
 import type { AuthData, Player } from "@/types/api";
+
+export { mapPlayerToUser, type AppUser } from "@/services/authUser";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -45,35 +54,11 @@ const googleDiscovery: DiscoveryDocument = {
   tokenEndpoint: `${BASE_URL}/api/auth/token`,
 };
 
-/** Normalized user shape consumed by screens (keeps `picture`/`email`/`name`). */
-export type AppUser = {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  player: Player;
-};
-
 /** Seeded player used by dev-login until the real Google flow lands. */
 const DEV_LOGIN_EMAIL =
   process.env.EXPO_PUBLIC_DEV_LOGIN_EMAIL ?? "arsavinwallentyn@gmail.com";
 
-function displayName(p: Player): string {
-  if (p.name && p.name.trim()) return p.name.trim();
-  const parts = [p.first_name, p.last_name].filter(Boolean) as string[];
-  if (parts.length) return parts.join(" ");
-  return p.google_name ?? "Player";
-}
-
-export function mapPlayerToUser(p: Player): AppUser {
-  return {
-    id: String(p.id_player),
-    email: p.google_email ?? "",
-    name: displayName(p),
-    picture: p.google_avatar ?? p.uploaded_profile_images?.[0]?.url ?? undefined,
-    player: p,
-  };
-}
+type GoogleOAuthPurpose = "login" | "link";
 
 type AuthContextValue = {
   user: AppUser | null;
@@ -85,6 +70,10 @@ type AuthContextValue = {
   devLogin: (email: string) => Promise<void>;
   /** Prod login with a Google OAuth id_token (provider wiring TODO). */
   signInWithGoogle: (idToken: string) => Promise<void>;
+  /** Run Google OAuth and return an id_token (does not log in). */
+  obtainGoogleIdToken: () => Promise<string>;
+  /** Link a Google account to the current session (never uses login endpoints). */
+  linkGoogleIdentity: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
   /** Re-fetch the authenticated player (GET /app/auth/me). */
   refreshMe: () => Promise<void>;
@@ -106,6 +95,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [request, response, promptAsync] = useAuthRequest(
     googleConfig,
     googleDiscovery
+  );
+  const googleOAuthPurposeRef = React.useRef<GoogleOAuthPurpose>("login");
+  const pendingGoogleTokenRef = React.useRef<{
+    resolve: (token: string) => void;
+    reject: (err: Error) => void;
+  } | null>(null);
+
+  const settlePendingGoogleToken = React.useCallback(
+    (err: Error | null, token?: string) => {
+      const pending = pendingGoogleTokenRef.current;
+      if (!pending) return false;
+      pendingGoogleTokenRef.current = null;
+      if (err) pending.reject(err);
+      else if (token) pending.resolve(token);
+      else pending.reject(new Error("Google sign-in failed"));
+      return true;
+    },
+    []
+  );
+
+  const exchangeCodeForGoogleIdToken = React.useCallback(
+    async (code: string, codeVerifier?: string) => {
+      const formData = new FormData();
+      formData.append("code", code);
+      if (isWeb) formData.append("platform", "web");
+      if (codeVerifier) formData.append("code_verifier", codeVerifier);
+
+      const tokenResponse = await fetch(`${BASE_URL}/api/auth/token`, {
+        method: "POST",
+        body: formData,
+        credentials: isWeb ? "include" : "same-origin",
+      });
+      const payload = await tokenResponse.json();
+
+      const idToken: string | undefined = payload?.googleIdToken;
+      if (!idToken) {
+        throw new Error("No Google id_token returned from token exchange");
+      }
+      return idToken;
+    },
+    [isWeb]
   );
 
   const applyToken = React.useCallback(async (token: string | null) => {
@@ -138,6 +168,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await applyToken(data.token);
       setUser(mapPlayerToUser(data.player));
       setError(null);
+      // Fire-and-forget: push registration must never block the login flow.
+      void syncPushToken();
+      // Flush any referral deeplink refs captured while logged out.
+      void flushReferralQueue();
     },
     [applyToken]
   );
@@ -182,6 +216,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     [finishLogin]
   );
 
+  const linkGoogleIdentity = React.useCallback(
+    async (idToken: string) => {
+      await apiLinkGoogleIdentity(idToken);
+      await refreshMe();
+    },
+    [refreshMe]
+  );
+
+  const obtainGoogleIdToken = React.useCallback(async () => {
+    if (pendingGoogleTokenRef.current) {
+      throw new Error("Google sign-in already in progress");
+    }
+    return new Promise<string>((resolve, reject) => {
+      pendingGoogleTokenRef.current = { resolve, reject };
+      googleOAuthPurposeRef.current = "link";
+      setError(null);
+      void promptAsync();
+    });
+  }, [promptAsync]);
+
   // Process each expo-auth-session result exactly once: exchange the code via the BFF,
   // then forward the Google id_token the BFF returns to Laravel. Depending only on
   // `response` (plus a ref guard) is essential — otherwise unrelated re-renders would
@@ -193,39 +247,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     processedResponseRef.current = response;
 
     if (response.type === "error") {
-      setError(
-        (response.error as unknown as Error) ?? new Error("Google sign-in failed")
-      );
+      const err =
+        (response.error as unknown as Error) ?? new Error("Google sign-in failed");
+      if (settlePendingGoogleToken(err)) return;
+      setError(err);
       return;
     }
-    if (response.type !== "success") return; // cancelled / dismissed
+    if (response.type === "cancel" || response.type === "dismiss") {
+      const err = new Error("Google sign-in was cancelled");
+      if (settlePendingGoogleToken(err)) return;
+      return;
+    }
+    if (response.type !== "success") return;
 
+    const purpose = googleOAuthPurposeRef.current;
     const codeVerifier = request?.codeVerifier;
     void (async () => {
-      setIsLoading(true);
+      const forLink = purpose === "link";
+      if (!forLink) setIsLoading(true);
       try {
         const { code } = response.params;
-        const formData = new FormData();
-        formData.append("code", code);
-        if (isWeb) formData.append("platform", "web");
-        if (codeVerifier) formData.append("code_verifier", codeVerifier);
+        const idToken = await exchangeCodeForGoogleIdToken(code, codeVerifier);
 
-        const tokenResponse = await fetch(`${BASE_URL}/api/auth/token`, {
-          method: "POST",
-          body: formData,
-          credentials: isWeb ? "include" : "same-origin",
-        });
-        const payload = await tokenResponse.json();
-
-        const idToken: string | undefined = payload?.googleIdToken;
-        if (!idToken) {
-          throw new Error("No Google id_token returned from token exchange");
+        if (forLink) {
+          settlePendingGoogleToken(null, idToken);
+          return;
         }
+
         await signInWithGoogle(idToken);
       } catch (e) {
-        setError(e as Error);
+        const err = e as Error;
+        if (settlePendingGoogleToken(err)) return;
+        setError(err);
       } finally {
-        setIsLoading(false);
+        if (!forLink) setIsLoading(false);
       }
     })();
     // Only react to a new auth response; request/isWeb/signInWithGoogle are stable.
@@ -233,12 +288,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [response]);
 
   const signIn = React.useCallback(async () => {
+    googleOAuthPurposeRef.current = "login";
     setError(null);
-    await promptAsync();
+    const result = await promptAsync();
+    if (!result) return;
+    if (result.type === "cancel" || result.type === "dismiss") {
+      const err = new Error("Google sign-in was cancelled");
+      setError(err);
+      throw err;
+    }
+    if (result.type === "error") {
+      const err =
+        (result.error as unknown as Error) ?? new Error("Google sign-in failed");
+      setError(err);
+      throw err;
+    }
   }, [promptAsync]);
 
   const signOut = React.useCallback(async () => {
     try {
+      // Drop the device token first — the DELETE needs the bearer token to still work.
+      await clearPushToken();
       if (tokenRef.current) await apiPost("/app/auth/logout", {});
     } catch {
       // Best-effort: ignore network/401 errors on logout.
@@ -269,6 +339,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!stored) return;
         tokenRef.current = stored;
         await refreshMe();
+        void syncPushToken();
+        void flushReferralQueue();
       } catch (e) {
         if (e instanceof ApiError && e.isUnauthorized) {
           await clearSession();
@@ -291,6 +363,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     devLogin,
     signInWithGoogle,
+    obtainGoogleIdToken,
+    linkGoogleIdentity,
     signOut,
     refreshMe,
     fetchWithAuth,

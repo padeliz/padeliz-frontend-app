@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
@@ -10,14 +10,24 @@ type Props = {
   isFinalStep: boolean;
   stepNumber: number;
   color: string;
+  enabled?: boolean;
+  onPress?: () => void;
 };
 
-export default function Step({ label, isCompleted, isCurrent, isFinalStep, stepNumber, color }: Props) {
+export default function Step({
+  label,
+  isCompleted,
+  isCurrent,
+  isFinalStep,
+  stepNumber,
+  color,
+  enabled = false,
+  onPress,
+}: Props) {
   const circleColor = isCompleted || isCurrent ? color : Colors.CREAM_20;
-  const labelColor  = isCurrent ? color : Colors.CREAM;
-
-  return (
-    <View style={styles.container}>
+  const labelColor = isCurrent ? color : Colors.CREAM;
+  const content = (
+    <>
       <View style={[styles.circle, { backgroundColor: circleColor }]}>
         {isCompleted && (
           <FontAwesome name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
@@ -33,8 +43,23 @@ export default function Step({ label, isCompleted, isCurrent, isFinalStep, stepN
         )}
       </View>
       <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
-    </View>
+    </>
   );
+
+  if (enabled && onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={styles.container}
+        testID={`wizard-step-${stepNumber}`}
+        accessibilityRole="button"
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.container}>{content}</View>;
 }
 
 const styles = StyleSheet.create({

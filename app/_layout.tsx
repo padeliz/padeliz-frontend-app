@@ -3,44 +3,72 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AppState, Platform, type AppStateStatus } from "react-native";
+import { focusManager, QueryClientProvider } from "@tanstack/react-query";
+import { createAppQueryClient } from "@/lib/queryClient";
 import { AuthProvider, useAuth } from "@/context/auth";
-import { EventsProvider } from "@/context/events";
+import { handleReferralUrl } from "@/services/referralRouting";
+import { ROOT_STACK_SCREENS } from "@/utils/rootStackScreens";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+export { ROOT_STACK_SCREENS } from "@/utils/rootStackScreens";
+
 SplashScreen.preventAutoHideAsync();
+
+/** Native has no window focus: treat foregrounding the app as a focus event. */
+function onAppStateChange(status: AppStateStatus) {
+  if (Platform.OS !== "web") focusManager.setFocused(status === "active");
+}
+
+function ReferralLinkListener() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const handleUrl = async (url: string | null) => {
+      await handleReferralUrl({
+        url,
+        pathname,
+        isAuthed: Boolean(user),
+        navigate: (path) => router.push(path as any),
+      });
+    };
+
+    void Linking.getInitialURL().then((url) => void handleUrl(url));
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      void handleUrl(url);
+    });
+    return () => sub.remove();
+  }, [user, isLoading, router, pathname]);
+
+  return null;
+}
 
 function RootNavigator() {
   const colorScheme = useColorScheme();
-  const { user } = useAuth();
 
-  // Auth gating is declarative: a false `guard` removes those screens from the navigator,
-  // and expo-router falls back to the first remaining screen. Signing out (user -> null)
-  // therefore tears down the tabs/event screens and lands on `index` (login) on its own —
-  // no imperative redirect, so no navigation race or focus-effect loop.
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ReferralLinkListener />
       <Stack>
-        <Stack.Protected guard={!user}>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-        </Stack.Protected>
-
-        <Stack.Protected guard={!!user}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="event/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="event/eligibility-check" options={{ headerShown: false }} />
-          <Stack.Screen name="event/registration" options={{ headerShown: false }} />
-        </Stack.Protected>
-
-        <Stack.Screen name="test-screen" />
-        <Stack.Screen name="+not-found" />
+        {ROOT_STACK_SCREENS.map((screen) => (
+          <Stack.Screen
+            key={screen.name}
+            name={screen.name}
+            options={screen.options}
+          />
+        ))}
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
@@ -49,6 +77,12 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_700Bold });
+  const [queryClient] = useState(createAppQueryClient);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", onAppStateChange);
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
@@ -57,10 +91,10 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <AuthProvider>
-      <EventsProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <RootNavigator />
-      </EventsProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

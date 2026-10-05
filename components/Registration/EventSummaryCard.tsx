@@ -12,7 +12,11 @@ export default function EventSummaryCard({ event }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.inner}>
-        <Image source={event.eventImage} style={styles.image} />
+        {event.eventImage ? (
+          <Image source={event.eventImage} style={styles.image} />
+        ) : (
+          <View style={[styles.image, styles.imageEmpty]} testID="event-summary-cover-empty" />
+        )}
         <View style={styles.info}>
           <Text style={styles.title}>{event.eventName}</Text>
           <View style={styles.row}>
@@ -47,6 +51,9 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 8,
     resizeMode: 'cover',
+  },
+  imageEmpty: {
+    backgroundColor: Colors.DARK_GRAY,
   },
   info: {
     flex: 1,

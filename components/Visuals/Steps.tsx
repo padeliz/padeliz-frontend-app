@@ -4,20 +4,30 @@ import * as Colors from '@/constants/Colors';
 
 type Props = {
   labels: string[];
-  currentStep: number;  // 1-indexed
+  currentStep: number; // 1-indexed
   color?: string;
+  /** 1-indexed steps that can be pressed. */
+  enabledSteps?: number[];
+  onStepPress?: (step: number) => void;
 };
 
-export default function Steps({ labels, currentStep, color = Colors.ORANGE }: Props) {
+export default function Steps({
+  labels,
+  currentStep,
+  color = Colors.ORANGE,
+  enabledSteps = [],
+  onStepPress,
+}: Props) {
   return (
     <View style={styles.container}>
       {labels.map((label, index) => {
-        const stepNumber  = index + 1;
+        const stepNumber = index + 1;
         const isCompleted = stepNumber < currentStep;
-        const isCurrent   = stepNumber === currentStep;
+        const isCurrent = stepNumber === currentStep;
         const isFinalStep = stepNumber === labels.length;
-        const isLast      = index === labels.length - 1;
-        const lineColor   = stepNumber < currentStep ? color : Colors.GRAY;
+        const isLast = index === labels.length - 1;
+        const lineColor = stepNumber < currentStep ? color : Colors.GRAY;
+        const enabled = enabledSteps.includes(stepNumber);
 
         return (
           <View key={label} style={[styles.stepRow, isLast && styles.stepRowLast]}>
@@ -28,6 +38,10 @@ export default function Steps({ labels, currentStep, color = Colors.ORANGE }: Pr
               isFinalStep={isFinalStep}
               stepNumber={stepNumber}
               color={color}
+              enabled={enabled}
+              onPress={
+                enabled && onStepPress ? () => onStepPress(stepNumber) : undefined
+              }
             />
             {!isLast && (
               <View style={[styles.line, { backgroundColor: lineColor }]} />

@@ -11,7 +11,6 @@
  *   POST  /app/my/eligibility/pending/portrait-photo  (multipart `file`)
  *   DELETE /app/my/eligibility/pending/portrait-photo/{id}
  */
-import { Platform } from "react-native";
 import {
   apiDelete,
   apiGetEnvelope,
@@ -20,6 +19,7 @@ import {
   apiUpload,
 } from "@/services/apiClient";
 import { ApiError } from "@/services/apiError";
+import { formDataFromUri, type FileMeta } from "@/services/upload";
 import type {
   Eligibility,
   EligibilityStatus,
@@ -81,38 +81,12 @@ export function discardEligibility(): Promise<unknown> {
 
 // ---------- File uploads ----------
 
-const MIME_BY_EXT: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  webp: "image/webp",
-  pdf: "application/pdf",
-};
-
-/**
- * Build a multipart body from a local file URI. On web, FormData does not accept a
- * `{uri,name,type}` object (it serializes to "[object Object]"), so we fetch the URI
- * into a real Blob. On native, React Native's FormData expects the `{uri,name,type}`
- * file shape. `name`/`type` from the image picker are preferred when provided.
- */
-export async function fileFromUri(
+/** Eligibility uploads all use the `file` field. */
+export function fileFromUri(
   uri: string,
-  opts?: { name?: string; type?: string }
+  opts?: FileMeta
 ): Promise<FormData> {
-  const inferredName = uri.split("/").pop()?.split("?")[0] || "upload.jpg";
-  const name = opts?.name || inferredName;
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  const type = opts?.type || MIME_BY_EXT[ext] || "image/jpeg";
-
-  const form = new FormData();
-  if (Platform.OS === "web") {
-    const blob = await (await fetch(uri)).blob();
-    form.append("file", blob, name);
-  } else {
-    form.append("file", { uri, name, type } as unknown as Blob);
-  }
-  return form;
+  return formDataFromUri("file", uri, opts);
 }
 
 export async function uploadStudentProof(

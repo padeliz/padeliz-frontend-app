@@ -34,7 +34,12 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   unauthorizedHandler = fn;
 }
 
-type QueryValue = string | number | boolean | undefined | null;
+type QueryPrimitive = string | number | boolean;
+type QueryValue =
+  | QueryPrimitive
+  | QueryPrimitive[]
+  | undefined
+  | null;
 
 export interface RequestOpts {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -54,6 +59,12 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, String(item));
+      }
+      continue;
+    }
     params.append(key, String(value));
   }
   const qs = params.toString();
@@ -178,12 +189,16 @@ export async function apiPatch<T>(
   return unwrap<T>(await request(path, { ...opts, method: "PATCH", body }));
 }
 
-/** DELETE; unwraps the custom envelope (often `null`). */
+/**
+ * DELETE with an optional JSON body (some endpoints require one, e.g. cancelling a
+ * registration needs `{cancel_reason}`); unwraps the custom envelope (often `null`).
+ */
 export async function apiDelete<T>(
   path: string,
+  body?: unknown,
   opts?: RequestOpts
 ): Promise<T> {
-  return unwrap<T>(await request(path, { ...opts, method: "DELETE" }));
+  return unwrap<T>(await request(path, { ...opts, method: "DELETE", body }));
 }
 
 /** POST multipart/form-data; unwraps the custom envelope to `data`. */

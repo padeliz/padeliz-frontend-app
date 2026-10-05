@@ -16,13 +16,21 @@ export default function UpcomingEventDetails({event}: Props) {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollview}>
-                <Image source={event.eventImage} style={styles.image}></Image>
+                {event.eventImage ? (
+                    <Image source={event.eventImage} style={styles.image}></Image>
+                ) : null}
                 <EventInfo name={event.eventName} location={event.location} date={event.date} registered={true} mini={true} />
                 <View style={styles.margin}>
                     <LocationPriceBox location={event.location} price={event.price} />
-                    <Schedule activities={event.activities} times={event.times} />
+                    <Schedule activities={(event as any).activities} times={(event as any).times} />
                     <About text={event.eventDescription} />
-                    <PersonCard image={event.organizerImage} name={event.organizerName} title={event.organizerTitle} />
+                    {event.organizerName ? (
+                        <PersonCard
+                            image={event.organizerImage ?? { uri: '' }}
+                            name={event.organizerName}
+                            title=""
+                        />
+                    ) : null}
                 </View>
             </ScrollView>
         </SafeAreaView>

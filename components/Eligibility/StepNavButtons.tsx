@@ -15,7 +15,7 @@ export default function StepNavButtons({ onBack, backLabel, onForward, forwardLa
   return (
     <View style={styles.container}>
       {onBack && backLabel ? (
-        <Pressable style={styles.button} onPress={onBack}>
+        <Pressable testID="step-back" style={styles.button} onPress={onBack}>
           <Text style={styles.smallLabelLeft}>Go back to</Text>
           <Text style={styles.mainLabelLeft}>{backLabel}</Text>
         </Pressable>
@@ -24,6 +24,7 @@ export default function StepNavButtons({ onBack, backLabel, onForward, forwardLa
       )}
       {onForward && forwardLabel ? (
         <Pressable
+          testID="step-forward"
           style={[styles.button, styles.buttonRight, isFinalForward && styles.buttonFilled]}
           onPress={onForward}
         >

@@ -14,6 +14,7 @@ type Props = {
   hint?: string;
   fill?: boolean;
   fillHeight?: number;
+  testID?: string;
 };
 
 export default function PhotoUploadSlot({
@@ -26,6 +27,7 @@ export default function PhotoUploadSlot({
   hint,
   fill,
   fillHeight,
+  testID,
 }: Props) {
   const handlePress = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -42,6 +44,7 @@ export default function PhotoUploadSlot({
 
   return (
     <Pressable
+      testID={testID}
       style={[
         styles.container,
         fill

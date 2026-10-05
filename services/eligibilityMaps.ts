@@ -42,13 +42,13 @@ function uniq<T>(arr: T[]): T[] {
 }
 
 /**
- * Build the PATCH /pending body from the collected form state. `editionIds` is the FULL
- * set of editions the pending record should cover (the backend replaces the array), so
+ * Build the PATCH /pending body from the collected form state. `eventIds` is the FULL
+ * set of events the pending record should cover (the backend replaces the array), so
  * callers must pass the union of existing + current to avoid dropping prior events.
  */
 export function buildPatchPendingBody(
   state: EligibilityFormState,
-  editionIds?: number[]
+  eventIds?: number[]
 ): PatchPendingBody {
   const body: PatchPendingBody = {};
 
@@ -88,10 +88,10 @@ export function buildPatchPendingBody(
 
   body.being_student = state.isStudent;
 
-  const ids = (editionIds ?? []).filter(
+  const ids = (eventIds ?? []).filter(
     (n) => typeof n === "number" && !Number.isNaN(n)
   );
-  if (ids.length) body.edition_ids = uniq(ids);
+  if (ids.length) body.event_ids = uniq(ids);
 
   return body;
 }

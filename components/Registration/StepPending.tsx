@@ -1,91 +1,166 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import { EventDetails } from '@/types/types';
 import EventSummaryCard from './EventSummaryCard';
-import PaymentDetailsCard from './PaymentDetailsCard';
+import DivisionColorBadge from '@/components/Events/DivisionColorBadge';
+
+export type StatusDivisionLine = {
+  id: number;
+  name: string;
+  playingTime: string;
+  amount: number;
+  color?: string | null;
+};
 
 type Props = {
   event: EventDetails;
-  divisionName: string;
-  fee: number;
-  discount: number;
+  registered: StatusDivisionLine[];
+  totalPaid: number;
+  pending: StatusDivisionLine[];
+  pendingDue: number;
+  onCancelRegistrations?: () => void;
 };
 
-export default function StepPending({ event, divisionName, fee, discount }: Props) {
+function DivisionLine({ line }: { line: StatusDivisionLine }) {
   return (
-    <View style={styles.container}>
-      <EventSummaryCard event={event} />
-
-      {/* Payment Details */}
-      <Text style={styles.sectionHeading}>Payment Details</Text>
-      <PaymentDetailsCard
-        divisionName={divisionName}
-        fee={fee}
-        discount={discount}
-        totalLabel="Total paid"
-      />
-
-      {/* Status Card */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>Status</Text>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Pending Review</Text>
-          </View>
-        </View>
-        <Text style={styles.statusDescription}>
-          Your payment proof is being reviewed. We'll notify you once it's approved.
+    <View style={styles.row}>
+      <View style={{ flex: 1, gap: 4 }}>
+        <DivisionColorBadge
+          name={line.name}
+          color={line.color}
+          testID={`status-division-badge-${line.id}`}
+        />
+        <Text style={[styles.meta, line.color ? { color: line.color } : null]}>
+          {line.playingTime}
         </Text>
       </View>
+      <Text style={[styles.amount, line.color ? { color: line.color } : null]}>
+        RON {line.amount}
+      </Text>
+    </View>
+  );
+}
+
+export default function StepPending({
+  event,
+  registered,
+  totalPaid,
+  pending,
+  pendingDue,
+  onCancelRegistrations,
+}: Props) {
+  return (
+    <View style={styles.container} testID="registration-status-summary">
+      <EventSummaryCard event={event} />
+
+      <Text style={styles.sectionHeading}>Registration status</Text>
+
+      {registered.length > 0 ? (
+        <View style={styles.card} testID="status-registered-block">
+          <Text style={styles.blockTitle}>Registered</Text>
+          {registered.map((line) => (
+            <DivisionLine key={line.id} line={line} />
+          ))}
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <Text style={styles.totalLabel}>Total paid</Text>
+            <Text style={styles.totalAmount} testID="status-total-paid">
+              RON {totalPaid}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {pending.length > 0 ? (
+        <View style={styles.card} testID="status-pending-block">
+          <Text style={styles.blockTitle}>Pending</Text>
+          {pending.map((line) => (
+            <DivisionLine key={line.id} line={line} />
+          ))}
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <Text style={styles.totalLabel}>Amount due</Text>
+            <Text style={styles.totalAmount} testID="status-pending-due">
+              RON {pendingDue}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {onCancelRegistrations ? (
+        <Pressable
+          style={styles.dangerBtn}
+          onPress={onCancelRegistrations}
+          testID="open-cancel-registrations"
+        >
+          <Text style={styles.dangerBtnText}>Cancel registration</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 16,
-  },
+  container: { gap: 16 },
   sectionHeading: {
     fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
-    lineHeight: 16,
     color: Colors.WHITE,
-    marginTop: 4,
   },
-  statusCard: {
-    backgroundColor: Colors.GRAY,
+  card: {
+    backgroundColor: Colors.WHITE_05,
     borderRadius: 8,
     padding: 16,
-    height: 116,
+    gap: 10,
   },
-  statusRow: {
+  blockTitle: {
+    fontFamily: Fonts.FONT_MEDIUM,
+    fontSize: Fonts.BODY_S,
+    color: Colors.CREAM_60,
+  },
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
   },
-  statusLabel: {
+  meta: {
     fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY_XS,
+    color: Colors.CREAM_60,
+  },
+  amount: {
+    fontFamily: Fonts.FONT_MEDIUM,
+    fontSize: Fonts.BODY_S,
+    color: Colors.WHITE,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Colors.CREAM_10,
+    marginVertical: 4,
+  },
+  totalLabel: {
+    flex: 1,
+    fontFamily: Fonts.FONT_MEDIUM,
+    fontSize: Fonts.BODY_S,
+    color: Colors.WHITE,
+  },
+  totalAmount: {
+    fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
     color: Colors.WHITE,
   },
-  statusBadge: {
-    backgroundColor: Colors.AMBER_T,
-    height: 28,
-    borderRadius: 14,
-    paddingHorizontal: 12,
+  dangerBtn: {
+    marginTop: 8,
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.CREAM_10,
   },
-  statusBadgeText: {
-    fontFamily: Fonts.FONT_REGULAR,
+  dangerBtnText: {
+    fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY_S,
-    color: Colors.AMBER,
-  },
-  statusDescription: {
-    fontFamily: Fonts.FONT_REGULAR,
-    fontSize: Fonts.BODY_S,
-    color: Colors.CREAM_60,
-    marginTop: 16,
-    lineHeight: 20,
+    color: Colors.RED,
   },
 });

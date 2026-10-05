@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,31 @@ import {
   Pressable,
   StyleSheet,
   SafeAreaView,
+  ActivityIndicator,
+  Modal,
+  Alert,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import { useAuth } from '@/context/auth';
 import Button from '@/components/Buttons/Button';
-
-const MOCK_EVENT_HISTORY = [
-  {
-    id: '1',
-    name: 'ARSH Padel MiniTour #20',
-    date: '05 April 2025',
-    result: 'Semi-finalist',
-  },
-  {
-    id: '2',
-    name: 'ARSH Padel MiniTour #18',
-    date: '09 February 2025',
-    result: 'Quarter-finalist',
-  },
-];
+import LoginOptions from '@/components/Login/LoginOptions';
+import ScreenHeader from '@/components/Navigation/ScreenHeader';
+import { fetchEventHistory } from '@/services/eventHistory';
+import { confirmAsync } from '@/services/confirm';
+import { ApiError } from '@/services/apiError';
+import { identityListLabel } from '@/services/playerMapping';
+import {
+  useIdentities,
+  useUnlinkIdentityMutation,
+} from '@/services/hooks/useIdentities';
+import { queryKeys } from '@/lib/queryClient';
+import { formatDateHuman } from '@/services/mappers';
+import { eventDetailPath } from '@/utils/eventPaths';
+import type { EventHistoryItem, PlayerIdentity } from '@/types/api';
 
 function InfoCard({
   label,
@@ -51,163 +55,396 @@ function InfoCard({
   );
 }
 
-export default function AccountScreen() {
-  const { user, signOut } = useAuth();
+function formatLinkedAt(linkedAt: number): string {
+  return new Date(linkedAt * 1000).toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function IdentityDetailsModal({
+  identity,
+  visible,
+  onClose,
+  onUnlink,
+  unlinkBusy,
+  canUnlink,
+  unlinkError,
+}: {
+  identity: PlayerIdentity | null;
+  visible: boolean;
+  onClose: () => void;
+  onUnlink: () => void;
+  unlinkBusy: boolean;
+  canUnlink: boolean;
+  unlinkError?: string | null;
+}) {
+  if (!identity) return null;
+
+  const dismiss = () => {
+    if (unlinkBusy) return;
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={dismiss}>
+      <Pressable style={styles.modalBackdrop} onPress={dismiss}>
+        <Pressable style={styles.modalCard} onPress={() => undefined}>
+          <Text style={styles.modalTitle}>Google account</Text>
+          {identity.email ? (
+            <Text style={styles.modalRow}>
+              <Text style={styles.modalLabel}>Email </Text>
+              {identity.email}
+            </Text>
+          ) : null}
+          {identity.display_name ? (
+            <Text style={styles.modalRow}>
+              <Text style={styles.modalLabel}>Name </Text>
+              {identity.display_name}
+            </Text>
+          ) : null}
+          <Text style={styles.modalRow}>
+            <Text style={styles.modalLabel}>Linked </Text>
+            {formatLinkedAt(identity.linked_at)}
+          </Text>
+
+          {unlinkError ? (
+            <Text style={styles.unlinkError} testID="identity-unlink-error">
+              {unlinkError}
+            </Text>
+          ) : null}
+
+          <View style={styles.modalActions}>
+            {canUnlink ? (
+              <Button
+                label={unlinkBusy ? 'Unlinking…' : 'Unlink'}
+                onPress={onUnlink}
+                disabled={unlinkBusy}
+                style={styles.unlinkButton}
+                labelStyle={styles.unlinkButtonLabel}
+              />
+            ) : null}
+            <Button
+              label="Close"
+              onPress={dismiss}
+              disabled={unlinkBusy}
+              style={styles.modalCloseButton}
+              labelStyle={styles.modalCloseLabel}
+            />
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function GuestAccountBody() {
+  return (
+    <View style={styles.guestBody} testID="account-guest-login">
+      <Image
+        source={require('@/assets/images/logos/logo.png')}
+        style={styles.guestLogo}
+      />
+      <Text style={styles.guestHeading}>Welcome to Padeliz</Text>
+      <Text style={styles.guestSubtitle}>
+        Join padel events, track tournaments, and connect with players
+      </Text>
+      <LoginOptions style={styles.guestLogin} />
+      <Text style={styles.guestFooter}>
+        By continuing, you agree to our Terms of Service
+      </Text>
+    </View>
+  );
+}
+
+function linkErrorAlert(err: unknown) {
+  if (err instanceof ApiError) {
+    if (err.status === 409 || err.status === 422) {
+      Alert.alert('Could not link account', err.message);
+      return;
+    }
+  }
+  Alert.alert('Could not link account', 'Something went wrong. Please try again.');
+}
+
+function unlinkErrorAlert(err: unknown) {
+  if (err instanceof ApiError && err.status === 422) {
+    Alert.alert('Could not unlink', err.message);
+    return;
+  }
+  Alert.alert('Could not unlink', 'Something went wrong. Please try again.');
+}
+
+function ProfileAccountBody() {
+  const { user, signOut, obtainGoogleIdToken, linkGoogleIdentity } = useAuth();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const viewer = user ? String(user.id) : 'guest';
   const player = user?.player;
-  const [isStudent, setIsStudent] = useState(!!player?.being_student);
-  const [showTooltip, setShowTooltip] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [history, setHistory] = useState<EventHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [selectedIdentity, setSelectedIdentity] = useState<PlayerIdentity | null>(null);
+  const [unlinkError, setUnlinkError] = useState<string | null>(null);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [signOutBusy, setSignOutBusy] = useState(false);
+
+  const { data: identities, loading: identitiesLoading, refetch: refetchIdentities } =
+    useIdentities();
+  const unlinkMutation = useUnlinkIdentityMutation();
+
+  const googleIdentities = useMemo(
+    () => (identities ?? []).filter((i) => i.provider === 'google'),
+    [identities]
+  );
 
   const nickname = user?.name ?? 'Player';
   const userId = player ? `#${String(player.id_player).padStart(5, '0')}` : '—';
-  const birthdate = player?.year_of_birth ? String(player.year_of_birth) : 'Not set';
-  const phone = player?.phone ?? 'Not set';
+  const emailDisplay = user?.email?.trim() ? user.email : 'Not set';
+  const phoneDisplay = user?.phone?.trim() ? user.phone : 'Not set';
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetchEventHistory(1);
+      setHistory(res.data ?? []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  const handleLinkAnother = async () => {
+    setLinkBusy(true);
+    try {
+      const idToken = await obtainGoogleIdToken();
+      await linkGoogleIdentity(idToken);
+      void refetchIdentities();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.identities.all(viewer) });
+    } catch (e) {
+      linkErrorAlert(e);
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  const canUnlinkSelected =
+    selectedIdentity != null &&
+    googleIdentities.filter((i) => i.provider === selectedIdentity.provider).length > 1;
+
+  const handleUnlink = async () => {
+    if (!selectedIdentity || !canUnlinkSelected) return;
+    const confirmed = await confirmAsync(
+      'Unlink Google account',
+      'You can link it again later from this screen.'
+    );
+    if (!confirmed) return;
+
+    setUnlinkError(null);
+    try {
+      await unlinkMutation.mutateAsync(selectedIdentity.id_identity);
+      setSelectedIdentity(null);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.identities.all(viewer) });
+    } catch (e) {
+      const message =
+        e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
+      setUnlinkError(message);
+      unlinkErrorAlert(e);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const confirmed = await confirmAsync(
+      'Sign out',
+      'You will need to sign in again to register or manage your account.'
+    );
+    if (!confirmed) return;
+
+    setSignOutBusy(true);
+    try {
+      await signOut();
+    } finally {
+      setSignOutBusy(false);
+    }
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarContainer} testID="account-avatar">
+          {user?.picture && !avatarError ? (
+            <Image
+              source={{ uri: user.picture }}
+              style={styles.avatar}
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <FontAwesome name="user" size={36} color={Colors.CREAM_60} />
+            </View>
+          )}
+          <View style={styles.avatarLock} testID="account-avatar-lock">
+            <FontAwesome name="lock" size={14} color={Colors.CREAM_60} />
+          </View>
+        </View>
+        <View style={styles.nicknameContainer}>
+          <Text style={styles.nickname}>{nickname}</Text>
+          <Text style={styles.userId}>ID: {userId}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Linked Google Accounts</Text>
+
+        {identitiesLoading ? (
+          <ActivityIndicator color={Colors.BLUE} />
+        ) : googleIdentities.length === 0 ? (
+          <Text style={styles.emptyIdentities} testID="google-identities-empty">
+            No Google accounts linked yet.
+          </Text>
+        ) : (
+          <View style={styles.identityList} testID="google-identities-list">
+            {googleIdentities.map((identity) => (
+              <Pressable
+                key={identity.id_identity}
+                style={styles.accountCard}
+                testID={`google-identity-${identity.id_identity}`}
+                onPress={() => setSelectedIdentity(identity)}
+              >
+                <Image
+                  source={require('@/assets/images/google-icon.png')}
+                  style={styles.googleIcon}
+                />
+                <View style={styles.accountInfo}>
+                  <Text style={styles.accountEmail} numberOfLines={1}>
+                    {identityListLabel(identity)}
+                  </Text>
+                </View>
+                <FontAwesome name="chevron-right" size={14} color={Colors.CREAM_60} />
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        <Button
+          label="Link Another Account"
+          icon={<FontAwesome name="plus" size={14} color={Colors.BLUE} />}
+          style={styles.linkButton}
+          labelStyle={styles.linkButtonLabel}
+          onPress={() => void handleLinkAnother()}
+          disabled={linkBusy}
+          testID="link-google-account"
+        />
+        {linkBusy ? (
+          <ActivityIndicator color={Colors.BLUE} style={{ marginTop: 8 }} />
+        ) : null}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Personal Information</Text>
+
+        <View style={styles.infoCards}>
+          <InfoCard label="Full Name" value={user?.name ?? 'N/A'} showLock />
+          <InfoCard label="Email" value={emailDisplay} showLock />
+          <InfoCard label="Phone Number" value={phoneDisplay} showLock />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Event History</Text>
+
+        {historyLoading ? (
+          <ActivityIndicator color={Colors.BLUE} style={{ marginTop: 16 }} />
+        ) : (
+          <View style={styles.historyCards} testID="event-history-list">
+            {history.length === 0 ? (
+              <Text style={styles.emptyHistory}>No past events yet.</Text>
+            ) : (
+              history.map((event) => (
+                <Pressable
+                  key={event.id_event}
+                  style={styles.historyCard}
+                  testID={`event-history-${event.id_event}`}
+                  onPress={() =>
+                    router.push(
+                      eventDetailPath(Number(event.id_event), event.slug) as any
+                    )
+                  }
+                >
+                  <View style={styles.historyTopRow}>
+                    <Text style={styles.historyName} numberOfLines={1}>
+                      {event.name}
+                    </Text>
+                    <Text style={styles.historyDate}>
+                      {formatDateHuman(event.date)}
+                    </Text>
+                  </View>
+                  <Text style={styles.historyResult}>
+                    {(event.division_titles ?? []).join(' · ') || '—'}
+                  </Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+        )}
+      </View>
+
+      <Pressable
+        style={[styles.signOutButton, signOutBusy && styles.signOutDisabled]}
+        onPress={() => void handleSignOut()}
+        disabled={signOutBusy}
+        testID="account-sign-out"
+      >
+        {signOutBusy ? (
+          <ActivityIndicator color={Colors.RED} />
+        ) : (
+          <>
+            <FontAwesome name="sign-out" size={16} color={Colors.RED} />
+            <Text style={styles.signOutLabel}>Sign Out</Text>
+          </>
+        )}
+      </Pressable>
+
+      <IdentityDetailsModal
+        identity={selectedIdentity}
+        visible={selectedIdentity !== null}
+        onClose={() => {
+          setUnlinkError(null);
+          setSelectedIdentity(null);
+        }}
+        onUnlink={() => void handleUnlink()}
+        unlinkBusy={unlinkMutation.isPending}
+        canUnlink={canUnlinkSelected}
+        unlinkError={unlinkError}
+      />
+    </ScrollView>
+  );
+}
+
+export default function AccountScreen() {
+  const { user, isLoading } = useAuth();
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Account</Text>
-      </View>
+      <ScreenHeader title="Account" variant="root" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        onScrollBeginDrag={() => showTooltip && setShowTooltip(false)}
-      >
-        {/* Avatar & Nickname */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            {user?.picture && !avatarError ? (
-              <Image
-                source={{ uri: user.picture }}
-                style={styles.avatar}
-                onError={() => setAvatarError(true)}
-              />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <FontAwesome name="user" size={36} color={Colors.CREAM_60} />
-              </View>
-            )}
-            <Pressable style={styles.cameraButton}>
-              <FontAwesome name="camera" size={14} color={Colors.WHITE} />
-            </Pressable>
-          </View>
-          <View style={styles.nicknameContainer}>
-            <Text style={styles.nickname}>{nickname}</Text>
-            <Text style={styles.userId}>ID: {userId}</Text>
-          </View>
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={Colors.BLUE} />
         </View>
-
-        {/* Linked Google Accounts */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Linked Google Accounts</Text>
-            <View>
-              <Pressable
-                onPress={() => setShowTooltip((prev) => !prev)}
-                hitSlop={8}
-              >
-                <FontAwesome name="lock" size={18} color={Colors.CREAM_60} />
-              </Pressable>
-              {showTooltip && (
-                <View style={styles.tooltipContainer}>
-                  <View style={styles.tooltip}>
-                    <Text style={styles.tooltipTitle}>private section</Text>
-                    <Text style={styles.tooltipSubtitle}>
-                      visible for you only
-                    </Text>
-                  </View>
-                  <View style={styles.tooltipBeak} />
-                </View>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.accountCard}>
-            <Image
-              source={require('@/assets/images/google-icon.png')}
-              style={styles.googleIcon}
-            />
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountEmail} numberOfLines={1}>
-                {user?.email ?? 'No email'}
-              </Text>
-              <Text style={styles.accountSubtitle}>Primary Account</Text>
-            </View>
-            <FontAwesome
-              name="check-circle"
-              size={16}
-              color={Colors.BLUE}
-              style={styles.checkIcon}
-            />
-          </View>
-
-          <Button
-            label="Link Another Account"
-            icon={<FontAwesome name="plus" size={14} color={Colors.BLUE} />}
-            style={styles.linkButton}
-            labelStyle={styles.linkButtonLabel}
-          />
-        </View>
-
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-
-          <View style={styles.infoCards}>
-            <InfoCard label="Full Name" value={user?.name ?? 'N/A'} />
-            <InfoCard label="Birthdate" value={birthdate} showLock />
-            <InfoCard label="Phone Number" value={phone} showLock />
-          </View>
-
-          <Pressable
-            style={styles.studentRow}
-            onPress={() => setIsStudent((prev) => !prev)}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: isStudent }}
-          >
-            <Text style={styles.studentText}>
-              High School / University student
-            </Text>
-            <View style={styles.checkboxTouchTarget}>
-              <View
-                style={[
-                  styles.checkbox,
-                  isStudent && styles.checkboxChecked,
-                ]}
-              >
-                {isStudent && (
-                  <FontAwesome name="check" size={12} color={Colors.WHITE} />
-                )}
-              </View>
-            </View>
-          </Pressable>
-        </View>
-
-        {/* Event History */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Event History</Text>
-
-          <View style={styles.historyCards}>
-            {MOCK_EVENT_HISTORY.map((event) => (
-              <View key={event.id} style={styles.historyCard}>
-                <View style={styles.historyTopRow}>
-                  <Text style={styles.historyName} numberOfLines={1}>
-                    {event.name}
-                  </Text>
-                  <Text style={styles.historyDate}>{event.date}</Text>
-                </View>
-                <Text style={styles.historyResult}>{event.result}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Sign Out */}
-        <Pressable style={styles.signOutButton} onPress={() => { void signOut(); }}>
-          <FontAwesome name="sign-out" size={16} color={Colors.RED} />
-          <Text style={styles.signOutLabel}>Sign Out</Text>
-        </Pressable>
-      </ScrollView>
+      ) : user ? (
+        <ProfileAccountBody />
+      ) : (
+        <GuestAccountBody />
+      )}
     </SafeAreaView>
   );
 }
@@ -217,24 +454,51 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.DARK_GRAY,
   },
-  header: {
-    height: 53,
-    paddingLeft: 16,
-    paddingTop: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.CREAM_10,
+  centered: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerTitle: {
-    fontFamily: Fonts.FONT_REGULAR,
-    fontSize: Fonts.HEADING_3,
-    color: Colors.WHITE,
   },
   scrollContent: {
     paddingBottom: 32,
   },
+  guestBody: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  guestLogo: {
+    width: 96,
+    height: 96,
+    resizeMode: 'contain',
+  },
+  guestHeading: {
+    fontFamily: Fonts.FONT_BOLD,
+    fontSize: 28,
+    color: Colors.WHITE,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  guestSubtitle: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY,
+    color: Colors.WHITE,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 24,
+  },
+  guestLogin: {
+    marginTop: 40,
+  },
+  guestFooter: {
+    marginTop: 32,
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY_S,
+    color: Colors.CREAM_T,
+    textAlign: 'center',
+  },
 
-  // Avatar & Nickname
   avatarSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -244,6 +508,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 80,
     height: 80,
+    position: 'relative',
   },
   avatar: {
     width: 80,
@@ -252,17 +517,6 @@ const styles = StyleSheet.create({
   },
   avatarFallback: {
     backgroundColor: Colors.GRAY,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraButton: {
-    position: 'absolute',
-    left: 48,
-    top: 48,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.BLUE,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -281,7 +535,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Sections
   section: {
     marginTop: 32,
     paddingHorizontal: 16,
@@ -298,9 +551,11 @@ const styles = StyleSheet.create({
     color: Colors.WHITE,
   },
 
-  // Linked Google Accounts
+  identityList: {
+    gap: 12,
+  },
   accountCard: {
-    height: 76,
+    minHeight: 76,
     backgroundColor: Colors.GRAY,
     borderRadius: 8,
     flexDirection: 'row',
@@ -321,13 +576,11 @@ const styles = StyleSheet.create({
     fontSize: Fonts.BODY,
     color: Colors.WHITE,
   },
-  accountSubtitle: {
+  emptyIdentities: {
     fontFamily: Fonts.FONT_REGULAR,
     fontSize: Fonts.BODY_S,
     color: Colors.CREAM_60,
-  },
-  checkIcon: {
-    marginLeft: 12,
+    marginBottom: 8,
   },
   linkButton: {
     backgroundColor: Colors.GRAY,
@@ -337,7 +590,6 @@ const styles = StyleSheet.create({
     color: Colors.BLUE,
   },
 
-  // Tooltip
   tooltipContainer: {
     position: 'absolute',
     right: 30,
@@ -382,7 +634,6 @@ const styles = StyleSheet.create({
     marginLeft: -4,
   },
 
-  // Personal Information
   infoCards: {
     gap: 11,
     marginTop: 16,
@@ -411,53 +662,16 @@ const styles = StyleSheet.create({
     top: 28,
   },
 
-  // Student checkbox
-  studentRow: {
-    height: 56,
-    backgroundColor: Colors.WHITE_05,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingLeft: 18,
-    paddingRight: 8,
-    marginTop: 11,
-  },
-  studentText: {
-    fontFamily: Fonts.FONT_REGULAR,
-    fontSize: Fonts.BODY,
-    color: Colors.INACTIVE,
-  },
-  checkboxTouchTarget: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderWidth: 2,
-    borderColor: Colors.INACTIVE,
-    borderRadius: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: Colors.BLUE,
-    borderColor: Colors.BLUE,
-  },
-
-  // Event History
   historyCards: {
     gap: 12,
     marginTop: 16,
   },
   historyCard: {
-    height: 84,
+    minHeight: 84,
     backgroundColor: Colors.GRAY,
     borderRadius: 8,
     paddingHorizontal: 16,
+    paddingVertical: 14,
     justifyContent: 'center',
   },
   historyTopRow: {
@@ -483,8 +697,13 @@ const styles = StyleSheet.create({
     color: Colors.CREAM_60,
     marginTop: 8,
   },
+  emptyHistory: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY_S,
+    color: Colors.CREAM_60,
+    marginTop: 8,
+  },
 
-  // Sign Out
   signOutButton: {
     marginTop: 32,
     marginHorizontal: 16,
@@ -496,9 +715,72 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
+  signOutDisabled: {
+    opacity: 0.7,
+  },
   signOutLabel: {
     fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
     color: Colors.RED,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    backgroundColor: Colors.GRAY,
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontFamily: Fonts.FONT_MEDIUM,
+    fontSize: Fonts.HEADING_3,
+    color: Colors.WHITE,
+    marginBottom: 12,
+  },
+  modalRow: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY,
+    color: Colors.WHITE,
+    marginTop: 6,
+  },
+  modalLabel: {
+    color: Colors.CREAM_60,
+  },
+  modalActions: {
+    marginTop: 20,
+    gap: 10,
+  },
+  unlinkButton: {
+    backgroundColor: Colors.RED_T,
+  },
+  unlinkButtonLabel: {
+    color: Colors.RED,
+  },
+  modalCloseButton: {
+    backgroundColor: Colors.DARK_GRAY,
+  },
+  modalCloseLabel: {
+    color: Colors.WHITE,
+  },
+  unlinkError: {
+    marginTop: 12,
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY,
+    color: Colors.RED,
+  },
+  avatarLock: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.DARK_GRAY,
+    borderRadius: 10,
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

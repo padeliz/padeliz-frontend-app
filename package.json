@@ -8,11 +8,9 @@
     "ios": "expo run:ios --port 8081",
     "web": "expo start --web --port 8081",
     "test": "jest --watchAll",
+    "test:ci": "jest --ci",
     "lint": "expo lint",
-    "deploy": "EXPO_PUBLIC_BASE_URL=https://beto-auth-example.expo.app npx expo export --platform web -c && eas deploy --prod"
-  },
-  "jest": {
-    "preset": "jest-expo"
+    "deploy": "npx expo export --platform web -c && eas deploy --prod"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -20,6 +18,7 @@
     "@expo/vector-icons": "^14.1.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
+    "@tanstack/react-query": "^5.104.1",
     "expo": "^53.0.4",
     "expo-apple-authentication": "~7.2.4",
     "expo-auth-session": "~6.1.5",
@@ -31,6 +30,7 @@
     "expo-haptics": "~14.1.4",
     "expo-image-picker": "~16.1.4",
     "expo-linking": "~7.1.4",
+    "expo-notifications": "~0.31.5",
     "expo-router": "~5.0.3",
     "expo-secure-store": "~14.2.3",
     "expo-splash-screen": "~0.30.7",
@@ -46,6 +46,7 @@
     "react-native": "0.79.1",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-reanimated": "~3.17.4",
+    "react-native-render-html": "^6.3.4",
     "react-native-safe-area-context": "5.3.0",
     "react-native-screens": "~4.10.0",
     "react-native-svg": "^15.15.3",
@@ -54,6 +55,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.12",
     "@types/react": "~19.0.10",
     "@types/react-test-renderer": "^18.3.0",

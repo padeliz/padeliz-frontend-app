@@ -1,4 +1,13 @@
-import { Pressable, Text, View, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import {
+  Pressable,
+  Text,
+  View,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+  ActivityIndicator,
+} from 'react-native';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 
@@ -8,21 +17,49 @@ type Props = {
   label: string;
   onPress?: () => void;
   variant?: ButtonVariant;
+  disabled?: boolean;
+  loading?: boolean;
+  loadingColor?: string;
+  testID?: string;
   style?: StyleProp<ViewStyle>;
   icon?: React.ReactNode;
   labelStyle?: StyleProp<TextStyle>;
 };
 
-export default function Button({ label, onPress, variant = 'primary', style, icon, labelStyle }: Props) {
+export default function Button({
+  label,
+  onPress,
+  variant = 'primary',
+  disabled = false,
+  loading = false,
+  loadingColor = Colors.WHITE,
+  testID,
+  style,
+  icon,
+  labelStyle,
+}: Props) {
+  const isDisabled = disabled || loading || variant === 'disabled';
   return (
     <Pressable
+      testID={testID}
       style={[styles.base, variantStyles[variant], style]}
       onPress={onPress}
-      disabled={variant === 'disabled'}
+      disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       <View style={styles.content}>
-        {icon}
-        <Text style={[styles.label, labelStyle]}>{label}</Text>
+        {loading ? (
+          <ActivityIndicator
+            color={loadingColor}
+            testID={testID ? `${testID}-loading` : 'button-loading'}
+          />
+        ) : (
+          <>
+            {icon}
+            <Text style={[styles.label, labelStyle]}>{label}</Text>
+          </>
+        )}
       </View>
     </Pressable>
   );

@@ -206,9 +206,20 @@ export default function TestScreen() {
         {/* ── 7. Navigation ── */}
         <View style={styles.section}>
           <SectionTitle title="Navigation" />
-          <ScreenHeader title="Screen Title" onBack={() => {}} style={{ marginBottom: ITEM_GAP }} />
+          <ScreenHeader
+            title="Root Title"
+            variant="root"
+            style={{ marginBottom: ITEM_GAP }}
+          />
+          <ScreenHeader
+            title="Stack Title"
+            variant="stack"
+            onBack={() => {}}
+            style={{ marginBottom: ITEM_GAP }}
+          />
           <ScreenHeader
             title="With Actions"
+            variant="stack"
             onBack={() => {}}
             rightAction={<FontAwesome name="ellipsis-v" size={18} color={Colors.WHITE} />}
             style={{ marginBottom: ITEM_GAP }}

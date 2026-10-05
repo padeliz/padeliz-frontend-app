@@ -1,17 +1,21 @@
 /**
- * Date helpers for the editions list.
+ * Date helpers for the events list.
  *
- * The backend requires `date_from`/`date_to` (YYYY-MM-DD, date_to >= date_from) on
- * the editions endpoints, but an edition has a single `date` while the UI shows
- * upcoming/ongoing/past tabs. Strategy: fetch one wide range, then classify each
- * edition client-side by comparing its `date` string to today (lexicographic
- * comparison is valid for zero-padded YYYY-MM-DD).
+ * Calendar timing (today / Past / Ongoing / Upcoming) uses product TZ
+ * Europe/Bucharest — not the device-local zone.
  */
 import type { EventTiming } from "@/types/types";
 
 export type DateRange = { date_from: string; date_to: string };
 
-/** Format a Date as local YYYY-MM-DD. */
+export const PRODUCT_TIMEZONE = "Europe/Bucharest";
+
+/** Today's calendar date in Europe/Bucharest as YYYY-MM-DD (en-CA). */
+export function todayYmdBucharest(now: Date = new Date()): string {
+  return now.toLocaleDateString("en-CA", { timeZone: PRODUCT_TIMEZONE });
+}
+
+/** Format a Date as local YYYY-MM-DD (device-local; prefer todayYmdBucharest for tabs). */
 export function ymd(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -20,48 +24,117 @@ export function ymd(d: Date): string {
 }
 
 export function todayYmd(): string {
-  return ymd(new Date());
+  return todayYmdBucharest();
 }
 
-/** Classify an edition's "YYYY-MM-DD" date relative to today. */
-export function classifyTiming(date: string): EventTiming {
-  const today = todayYmd();
+/** Add calendar days to a YYYY-MM-DD string (UTC noon to avoid DST edge cases). */
+export function addDaysYmd(ymdStr: string, days: number): string {
+  const [y, m, d] = ymdStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Add calendar years to a YYYY-MM-DD string. */
+export function addYearsYmd(ymdStr: string, years: number): string {
+  const [y, m, d] = ymdStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y + years, m - 1, d, 12, 0, 0));
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Classify an event's "YYYY-MM-DD" date relative to Bucharest today. */
+export function classifyTiming(date: string, now: Date = new Date()): EventTiming {
+  const today = todayYmdBucharest(now);
   if (date > today) return "upcoming";
   if (date < today) return "past";
   return "ongoing";
 }
 
-/** Wide range (~today±1y). Used by the single-edition lookup fallback. */
-export function defaultListRange(daysBack = 365, daysAhead = 365): DateRange {
-  const from = new Date();
-  from.setDate(from.getDate() - daysBack);
-  const to = new Date();
-  to.setDate(to.getDate() + daysAhead);
-  return { date_from: ymd(from), date_to: ymd(to) };
+/** Wide range (~today±1y) in Bucharest calendar dates. */
+export function defaultListRange(
+  daysBack = 365,
+  daysAhead = 365,
+  now: Date = new Date()
+): DateRange {
+  const today = todayYmdBucharest(now);
+  return {
+    date_from: addDaysYmd(today, -daysBack),
+    date_to: addDaysYmd(today, daysAhead),
+  };
 }
 
 /**
- * Server-side date range for a timing tab, so each tab fetches exactly its editions.
- * Partitions with no overlap (matches classifyTiming): past = before today,
- * ongoing = today, upcoming = after today.
+ * Server-side date range for a timing tab (Bucharest).
+ * past = before today, ongoing = today, upcoming = after today.
  */
-export function rangeForTab(tab: EventTiming, years = 3): DateRange {
-  const today = new Date();
+export function rangeForTab(
+  tab: EventTiming,
+  years = 3,
+  now: Date = new Date()
+): DateRange {
+  const today = todayYmdBucharest(now);
   if (tab === "ongoing") {
-    const d = ymd(today);
-    return { date_from: d, date_to: d };
+    return { date_from: today, date_to: today };
   }
   if (tab === "upcoming") {
-    const from = new Date(today);
-    from.setDate(from.getDate() + 1);
-    const to = new Date(today);
-    to.setFullYear(to.getFullYear() + years);
-    return { date_from: ymd(from), date_to: ymd(to) };
+    return {
+      date_from: addDaysYmd(today, 1),
+      date_to: addYearsYmd(today, years),
+    };
   }
-  // past
-  const from = new Date(today);
-  from.setFullYear(from.getFullYear() - years);
-  const to = new Date(today);
-  to.setDate(to.getDate() - 1);
-  return { date_from: ymd(from), date_to: ymd(to) };
+  return {
+    date_from: addYearsYmd(today, -years),
+    date_to: addDaysYmd(today, -1),
+  };
+}
+
+/** Timing tab order in the Events UI. */
+export const TIMING_TAB_ORDER: EventTiming[] = ["past", "ongoing", "upcoming"];
+
+/**
+ * Default selected timing index: Ongoing when visible, otherwise Upcoming.
+ * `ongoingVisible` is true when unfiltered today event count > 0.
+ */
+export function defaultTimingIndex(ongoingVisible: boolean): number {
+  if (ongoingVisible) return TIMING_TAB_ORDER.indexOf("ongoing");
+  return TIMING_TAB_ORDER.indexOf("upcoming");
+}
+
+/** Offset (ms) of PRODUCT_TIMEZONE from UTC at the given instant. */
+function productTzOffsetMs(instant: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: PRODUCT_TIMEZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+  const part = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  const wallAsUtc = Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour") % 24,
+    part("minute"),
+    part("second")
+  );
+  return wallAsUtc - Math.floor(instant.getTime() / 1000) * 1000;
+}
+
+/**
+ * Instant for a Bucharest wall-clock date ("YYYY-MM-DD") and time ("HH:MM[:SS]").
+ * Returns an Invalid Date when the inputs cannot be parsed.
+ */
+export function productDateTimeToDate(ymdStr: string, time: string): Date {
+  const [y, m, d] = ymdStr.split("-").map(Number);
+  const [hh, mm = 0, ss = 0] = time.split(":").map(Number);
+  const naive = Date.UTC(y, m - 1, d, hh, mm, ss);
+  if (Number.isNaN(naive)) return new Date(NaN);
+  // Two passes so DST-boundary offsets settle.
+  const first = naive - productTzOffsetMs(new Date(naive));
+  return new Date(naive - productTzOffsetMs(new Date(first)));
 }

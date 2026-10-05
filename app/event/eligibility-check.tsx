@@ -1,9 +1,8 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Colors from '@/constants/Colors';
-import * as Fonts from '@/constants/Fonts';
+import ScreenHeader from '@/components/Navigation/ScreenHeader';
 import Steps from '@/components/Visuals/Steps';
 import StepNavButtons from '@/components/Eligibility/StepNavButtons';
 import StepSource from '@/components/Eligibility/StepSource';
@@ -12,7 +11,6 @@ import StepDetails from '@/components/Eligibility/StepDetails';
 import StepPhotos from '@/components/Eligibility/StepPhotos';
 import StepReview from '@/components/Eligibility/StepReview';
 import StatusBanner from '@/components/Feedback/StatusBanner';
-import { useEvents } from '@/context/events';
 import { useEligibilityLatest } from '@/services/hooks/useEligibility';
 import {
   fetchEligibilityLatest,
@@ -22,6 +20,7 @@ import {
 } from '@/services/eligibility';
 import { buildPatchPendingBody, hydrateFromEligibility } from '@/services/eligibilityMaps';
 import { ApiError } from '@/services/apiError';
+import { eventDetailPath } from '@/utils/eventPaths';
 
 // ---------- State types ----------
 
@@ -168,7 +167,6 @@ function submitErrorMessage(e: unknown): string {
 export default function EligibilityCheckScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
-  const { setEventStatus } = useEvents();
   const [currentStep, setCurrentStep] = useState(1);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [submitting, setSubmitting] = useState(false);
@@ -201,23 +199,23 @@ export default function EligibilityCheckScreen() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // The backend keeps ONE pending record per player covering a set of editions, and
-      // PATCH replaces edition_ids. Union the current event with whatever the pending
+      // The backend keeps ONE pending record per player covering a set of events, and
+      // PATCH replaces event_ids. Union the current event with whatever the pending
       // record already covers so submitting for one event doesn't drop the others.
-      let existingEditionIds: number[] = [];
+      let existingEventIds: number[] = [];
       try {
         const current = await fetchEligibilityLatest();
         if (current?.review_status === 'pending') {
-          existingEditionIds = current.edition_ids ?? [];
+          existingEventIds = current.event_ids ?? [];
         }
       } catch {
         // ignore — fall back to just this event
       }
-      const editionIds = eventId
-        ? Array.from(new Set([...existingEditionIds, Number(eventId)]))
-        : existingEditionIds;
+      const eventIds = eventId
+        ? Array.from(new Set([...existingEventIds, Number(eventId)]))
+        : existingEventIds;
 
-      const body = buildPatchPendingBody(state, editionIds);
+      const body = buildPatchPendingBody(state, eventIds);
       await patchPending(body, duplicateIdRef.current);
 
       // Student proofs require being_student=true on the pending record (set above).
@@ -235,7 +233,6 @@ export default function EligibilityCheckScreen() {
         await uploadPortraitPhoto(uri);
       }
 
-      if (eventId) setEventStatus(eventId, 'eligibility_pending');
       dispatch({ type: 'SUBMIT' });
       setCurrentStep(5);
     } catch (e) {
@@ -250,7 +247,7 @@ export default function EligibilityCheckScreen() {
       void submitEligibility();
     } else if (currentStep === 5) {
       if (eventId) {
-        router.replace(`/event/${eventId}` as any);
+        router.replace(eventDetailPath(Number(eventId)) as any);
       } else {
         router.replace('/' as any);
       }
@@ -263,14 +260,11 @@ export default function EligibilityCheckScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={currentStep === 1 ? () => router.back() : handleBack} style={styles.headerButton}>
-          <FontAwesome name="chevron-left" size={16} color={Colors.WHITE} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Eligibility Check</Text>
-        <View style={styles.headerButton} />
-      </View>
+      <ScreenHeader
+        title="Eligibility Check"
+        variant="stack"
+        onBack={currentStep === 1 ? () => router.back() : handleBack}
+      />
 
       {/* Stepper */}
       <View style={styles.stepper}>
@@ -306,26 +300,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.DARK_GRAY,
-  },
-  header: {
-    height: 57,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.CREAM_10,
-  },
-  headerButton: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontFamily: Fonts.FONT_MEDIUM,
-    fontSize: Fonts.HEADING_3,
-    color: Colors.WHITE,
   },
   stepper: {
     paddingHorizontal: 16,
