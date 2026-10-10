@@ -1,6 +1,6 @@
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import Button from '@/components/Buttons/Button';
@@ -162,7 +162,7 @@ export default function TestScreen() {
             placeholder="Input with icon"
             value={inputValue}
             onChangeText={setInputValue}
-            icon="search"
+            icon="magnify"
           />
         </View>
 
@@ -193,10 +193,10 @@ export default function TestScreen() {
               { name: 'home'     as const, label: 'Home',          color: Colors.CREAM },
               { name: 'calendar' as const, label: 'Calendar',      color: Colors.CREAM },
               { name: 'bell'     as const, label: 'Notifications', color: Colors.CREAM },
-              { name: 'user'     as const, label: 'Profile',       color: Colors.CREAM },
+              { name: 'account'  as const, label: 'Profile',       color: Colors.CREAM },
             ].map(({ name, label, color }) => (
               <View key={name} style={iconStyles.item}>
-                <FontAwesome name={name} size={24} color={color} />
+                <MaterialCommunityIcons name={name} size={24} color={color} />
                 <Text style={[iconStyles.label, { color }]}>{label}</Text>
               </View>
             ))}
@@ -221,7 +221,7 @@ export default function TestScreen() {
             title="With Actions"
             variant="stack"
             onBack={() => {}}
-            rightAction={<FontAwesome name="ellipsis-v" size={18} color={Colors.WHITE} />}
+            rightAction={<MaterialCommunityIcons name="dots-vertical" size={18} color={Colors.WHITE} />}
             style={{ marginBottom: ITEM_GAP }}
           />
           {/* Bottom tab bar preview */}
@@ -229,15 +229,15 @@ export default function TestScreen() {
             <View style={navStyles.tabRow}>
               {[
                 { name: 'home'   as const, label: 'Home',    active: true  },
-                { name: 'search' as const, label: 'Search',  active: false },
+                { name: 'magnify' as const, label: 'Search',  active: false },
                 { name: 'bell'   as const, label: 'Alerts',  active: false, dot: true },
-                { name: 'user'   as const, label: 'Profile', active: false },
+                { name: 'account' as const, label: 'Profile', active: false },
               ].map(({ name, label, active, dot }) => {
                 const color = active ? Colors.BLUE : Colors.CREAM;
                 return (
                   <View key={name} style={navStyles.tabItem}>
                     <View>
-                      <FontAwesome name={name} size={16} color={color} />
+                      <MaterialCommunityIcons name={name} size={16} color={color} />
                       {dot && <View style={navStyles.redDot} />}
                     </View>
                     <Text style={[navStyles.tabItemLabel, { color }]}>{label}</Text>
@@ -328,9 +328,9 @@ export default function TestScreen() {
           <DarkSubCard>
             <Text style={a11yStyles.cardLabel}>Touch Targets</Text>
             <View style={a11yStyles.touchRow}>
-              {(['plus', 'heart', 'share-square-o'] as const).map((icon) => (
+              {(['plus', 'heart', 'share-variant'] as const).map((icon) => (
                 <Pressable key={icon} style={a11yStyles.touchBtn}>
-                  <FontAwesome name={icon} size={20} color={Colors.WHITE} />
+                  <MaterialCommunityIcons name={icon} size={20} color={Colors.WHITE} />
                 </Pressable>
               ))}
             </View>

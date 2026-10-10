@@ -4,7 +4,7 @@ jest.mock('expo-router', () =>
   require('./testing/expoRouterMock').createExpoRouterMock()
 );
 
-jest.mock('@expo/vector-icons/FontAwesome', () => 'FontAwesome');
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => 'MaterialCommunityIcons');
 
 jest.mock('expo-web-browser', () => ({
   maybeCompleteAuthSession: jest.fn(),

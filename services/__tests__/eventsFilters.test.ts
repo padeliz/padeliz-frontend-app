@@ -3,6 +3,7 @@ import {
   applyAuthMembershipDefaults,
   defaultMembership,
   emptyTabFilters,
+  eventSortForTab,
   initialFiltersByTab,
   membershipChipLabel,
   toEventListFilters,
@@ -32,10 +33,25 @@ describe('events filter defaults', () => {
     expect(membershipChipLabel('upcoming')).toBe("I'm Registered");
   });
 
-  it('maps membership to participated vs registered by tab', () => {
+  it('maps Past → desc and Ongoing/Upcoming → asc', () => {
+    expect(eventSortForTab('past')).toBe('desc');
+    expect(eventSortForTab('ongoing')).toBe('asc');
+    expect(eventSortForTab('upcoming')).toBe('asc');
+  });
+
+  it('maps membership to participated vs registered by tab and always sends sort', () => {
     const on = emptyTabFilters(true);
-    expect(toEventListFilters('past', on)).toEqual({ participated: true });
-    expect(toEventListFilters('upcoming', on)).toEqual({ registered: true });
+    expect(toEventListFilters('past', on)).toEqual({
+      sort: 'desc',
+      participated: true,
+    });
+    expect(toEventListFilters('upcoming', on)).toEqual({
+      sort: 'asc',
+      registered: true,
+    });
+    expect(toEventListFilters('ongoing', emptyTabFilters(false))).toEqual({
+      sort: 'asc',
+    });
   });
 
   it('combines chip filters with AND', () => {
@@ -46,6 +62,7 @@ describe('events filter defaults', () => {
       clubIds: [2],
     };
     expect(toEventListFilters('upcoming', filters)).toEqual({
+      sort: 'asc',
       registered: true,
       unpaid: true,
       lottery_winner: true,

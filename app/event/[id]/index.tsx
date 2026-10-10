@@ -13,7 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import RenderHtml from 'react-native-render-html';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
@@ -31,7 +31,8 @@ import { EventBadge } from '@/types/types';
 import type { EventRegistration, RegistrationCancelReason } from '@/types/api';
 import { useAuth } from '@/context/auth';
 import { useEvent } from '@/services/hooks/useEvents';
-import { useEligibilityGate } from '@/services/hooks/useEligibility';
+import { useCurrentLevel } from '@/services/hooks/useLevelAssessment';
+import { useLevelFlow } from '@/services/hooks/useLevelFlow';
 import { useEventRegistration } from '@/services/hooks/useRegistrations';
 import {
   canSelfCancel,
@@ -40,22 +41,18 @@ import {
   openCheckoutId,
   registrationDivisionLabel,
 } from '@/services/registration';
-import { getEventStickyCta } from '@/services/eventCta';
+import { eventEndDate, getEventStickyCta } from '@/services/eventCta';
 import {
   eventDivisionOptions,
   eventToDetails,
   formatPaymentDueAt,
   registrationToEventStatus,
 } from '@/services/mappers';
-import {
-  eventEligibilityPath,
-  eventRegistrationPath,
-} from '@/utils/eventPaths';
+import { eventRegistrationPath } from '@/utils/eventPaths';
 
 const BADGE_COLORS: Record<string, string> = {
   pending_payment: Colors.BLUE,
   registration_pending: Colors.ORANGE,
-  eligibility_pending: Colors.ORANGE,
   registered: Colors.BADGE_GREEN,
   participated: Colors.BADGE_GREEN,
   lottery_winner: Colors.AMBER,
@@ -81,8 +78,8 @@ const DESCRIPTION_ALLOWED_TAGS = [
   'a',
 ] as const;
 
-const TABS = ['Info', 'Divisions', 'Description', 'Deadlines'] as const;
-type TabKey = (typeof TABS)[number];
+const ALL_TABS = ['Info', 'Divisions', 'Description', 'Deadlines'] as const;
+type TabKey = (typeof ALL_TABS)[number];
 
 const CANCELLATION_DEADLINE_COPY =
   "You can receive a refund only if you cancel your registration before this time. Don't register if you're not sure you can attend. You can't be replaced by another player, the playing slot will just be lost. Thank you for understanding.";
@@ -169,7 +166,8 @@ export default function EventDetailScreen() {
   const eventId = Number(id);
   const { data: event, loading: eventLoading, refetch: refetchEvent } =
     useEvent(eventId);
-  const gate = useEligibilityGate(isAuthed);
+  const { data: currentLevel, loading: levelLoading } = useCurrentLevel(isAuthed);
+  const { start: startLevelFlow, starting: levelStarting } = useLevelFlow();
   const {
     registrations,
     loading: registrationsLoading,
@@ -185,7 +183,7 @@ export default function EventDetailScreen() {
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const ctaSettled =
-    !eventLoading && (!isAuthed || (!gate.loading && !registrationsLoading));
+    !eventLoading && (!isAuthed || (!levelLoading && !registrationsLoading));
 
   const handleCancel = async (
     reason: RegistrationCancelReason,
@@ -243,7 +241,7 @@ export default function EventDetailScreen() {
           testID="open-share-referral"
           hitSlop={8}
         >
-          <FontAwesome name="share-square-o" size={18} color={Colors.WHITE} />
+          <MaterialCommunityIcons name="share-variant" size={18} color={Colors.WHITE} />
         </Pressable>
       }
     />
@@ -271,16 +269,21 @@ export default function EventDetailScreen() {
     );
   }
 
-  const status = isAuthed
-    ? registrationToEventStatus(registrations, gate)
-    : 'none';
+  const status = isAuthed ? registrationToEventStatus(registrations) : 'none';
   const details = eventToDetails(event, status);
+  const eventEndMs = eventEndDate(event).getTime();
+  const eventEnded = !Number.isNaN(eventEndMs) && Date.now() >= eventEndMs;
+  const tabs: readonly TabKey[] = eventEnded
+    ? ALL_TABS.filter((t) => t !== 'Deadlines')
+    : ALL_TABS;
+  const safeTabIndex = Math.min(activeTab, tabs.length - 1);
   const cta = ctaSettled
     ? getEventStickyCta({
         status,
         event,
-        isEligibilityApproved: gate.isApproved,
+        hasPlayerLevel: currentLevel !== null,
         isAuthed,
+        hasParticipated: Boolean(event.has_participated),
       })
     : null;
   const showCancel = isAuthed && canSelfCancel(event, registrations);
@@ -289,7 +292,7 @@ export default function EventDetailScreen() {
     label: registrationDivisionLabel(r, event),
   }));
   const badges: EventBadge[] = details.badges ?? [];
-  const tabKey: TabKey = TABS[activeTab];
+  const tabKey: TabKey = tabs[safeTabIndex] ?? 'Info';
   const divisionOptions = eventDivisionOptions(event);
   const divisionStates = registrationDivisionStates(registrations);
   const registrationClosesLabel = formatPaymentDueAt(
@@ -357,14 +360,14 @@ export default function EventDetailScreen() {
             {eventTitleAboveTabs}
           </Text>
           <View style={styles.heroDateUnderTitle} testID="event-hero-date">
-            <FontAwesome name="calendar" size={14} color={Colors.CREAM_80} />
+            <MaterialCommunityIcons name="calendar" size={14} color={Colors.CREAM_80} />
             <Text style={styles.heroMetaText}>{details.date}</Text>
           </View>
           <View testID="event-tabs">
             <FilterBar
               style={styles.tabBar}
-              options={TABS.map((label) => ({ label }))}
-              selectedIndex={activeTab}
+              options={tabs.map((label) => ({ label }))}
+              selectedIndex={safeTabIndex}
               onSelect={setActiveTab}
             />
           </View>
@@ -381,7 +384,7 @@ export default function EventDetailScreen() {
                     onPress={() => setInfoModal('date')}
                   >
                     <View style={styles.infoValueRow}>
-                      <FontAwesome name="calendar" size={22} color={Colors.WHITE} />
+                      <MaterialCommunityIcons name="calendar" size={22} color={Colors.WHITE} />
                       <View style={styles.infoTextCol}>
                         <Text style={styles.infoValue}>{details.dateShort}</Text>
                         {details.weekday ? (
@@ -396,7 +399,7 @@ export default function EventDetailScreen() {
                     onPress={() => setInfoModal('location')}
                   >
                     <View style={styles.infoValueRow}>
-                      <FontAwesome name="map-marker" size={22} color={Colors.WHITE} />
+                      <MaterialCommunityIcons name="map-marker" size={22} color={Colors.WHITE} />
                       <View style={styles.infoTextCol}>
                         <Text style={styles.infoValue} numberOfLines={1}>
                           {details.location}
@@ -608,7 +611,7 @@ export default function EventDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* CTA bar — loader until event + eligibility + regs settle */}
+      {/* CTA bar — loader until event + level + regs settle */}
       {!ctaSettled ? (
         <View style={styles.ctaBar} testID="cta-loading">
           <ActivityIndicator color={Colors.BLUE} />
@@ -617,7 +620,16 @@ export default function EventDetailScreen() {
         <View style={styles.ctaBar} testID="cta-bar">
           <Button
             label={cta.label}
-            variant={cta.disabled ? 'disabled' : 'primary'}
+            variant={
+              cta.variant === 'grey'
+                ? 'primary'
+                : cta.disabled
+                  ? 'disabled'
+                  : 'primary'
+            }
+            disabled={cta.disabled}
+            loading={levelStarting}
+            testID="event-cta"
             onPress={() => {
               if (cta.disabled) return;
               const target = cta.target;
@@ -626,16 +638,27 @@ export default function EventDetailScreen() {
                 setLoginOpen(true);
                 return;
               }
-              if (target.screen === 'eligibility') {
-                router.push(eventEligibilityPath(Number(id)) as any);
+              // Assess my level / Register: Discovery first when it is incomplete.
+              if (target.screen === 'assessment') {
+                void startLevelFlow('assessment', Number(id));
+                return;
+              }
+              if (target.initialStep == null) {
+                void startLevelFlow('registration', Number(id));
                 return;
               }
               router.push(
                 eventRegistrationPath(Number(id), target.initialStep) as any
               );
             }}
-            style={cta.variant === 'orange' ? styles.ctaOrange : undefined}
-            icon={cta.showClockIcon ? <FontAwesome name="clock-o" size={18} color={Colors.WHITE} /> : undefined}
+            style={
+              cta.variant === 'orange'
+                ? styles.ctaOrange
+                : cta.variant === 'grey'
+                  ? styles.ctaGrey
+                  : undefined
+            }
+            icon={cta.showClockIcon ? <MaterialCommunityIcons name="clock-outline" size={18} color={Colors.WHITE} /> : undefined}
           />
         </View>
       ) : null}
@@ -1037,6 +1060,9 @@ const styles = StyleSheet.create({
   },
   ctaOrange: {
     backgroundColor: Colors.ORANGE,
+  },
+  ctaGrey: {
+    backgroundColor: Colors.GRAY,
   },
   cancelLink: {
     marginTop: 24,

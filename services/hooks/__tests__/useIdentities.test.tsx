@@ -2,6 +2,7 @@ import { act, waitFor } from '@testing-library/react-native';
 import {
   useIdentities,
   useLinkGoogleIdentityMutation,
+  useSetAvatarPrimaryMutation,
   useUnlinkIdentityMutation,
 } from '@/services/hooks/useIdentities';
 import { renderHookWithQueryClient } from '@/testing/renderWithQueryClient';
@@ -17,17 +18,22 @@ jest.mock('@/context/auth', () => ({
 jest.mock('@/services/identities', () => ({
   fetchIdentities: jest.fn(),
   linkGoogleIdentity: jest.fn(),
+  setAvatarPrimaryIdentity: jest.fn(),
   unlinkIdentity: jest.fn(),
 }));
 
 import {
   fetchIdentities,
   linkGoogleIdentity,
+  setAvatarPrimaryIdentity,
   unlinkIdentity,
 } from '@/services/identities';
 
 const fetchIdentitiesMock = fetchIdentities as jest.MockedFunction<typeof fetchIdentities>;
 const linkGoogleIdentityMock = linkGoogleIdentity as jest.MockedFunction<typeof linkGoogleIdentity>;
+const setAvatarPrimaryIdentityMock = setAvatarPrimaryIdentity as jest.MockedFunction<
+  typeof setAvatarPrimaryIdentity
+>;
 const unlinkIdentityMock = unlinkIdentity as jest.MockedFunction<typeof unlinkIdentity>;
 
 beforeEach(() => {
@@ -94,6 +100,29 @@ describe('identity mutations', () => {
     });
 
     expect(unlinkIdentityMock).toHaveBeenCalledWith(10);
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.identities.all('3'),
+    });
+    await disposeTestQueryClient(client);
+  });
+
+  it('calls the API and invalidates viewer identities after setting primary avatar', async () => {
+    mockUser = { id: '3' };
+    setAvatarPrimaryIdentityMock.mockResolvedValue(
+      makeGoogleIdentity({ id_identity: 11, is_avatar_primary: true })
+    );
+
+    const { result, client } = renderHookWithQueryClient(() =>
+      useSetAvatarPrimaryMutation()
+    );
+
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+
+    await act(async () => {
+      await result.current.mutateAsync(11);
+    });
+
+    expect(setAvatarPrimaryIdentityMock).toHaveBeenCalledWith(11);
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: queryKeys.identities.all('3'),
     });

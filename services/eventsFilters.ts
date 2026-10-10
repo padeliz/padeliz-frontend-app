@@ -3,7 +3,7 @@
  * Kept free of React so Jest can cover defaults without mounting the screen.
  */
 import type { EventTiming } from "@/types/types";
-import type { EventListFilters } from "@/services/events";
+import type { EventListFilters, EventListSort } from "@/services/events";
 
 export type TabFilterState = {
   membership: boolean;
@@ -55,11 +55,16 @@ export function initialFiltersByTab(
   };
 }
 
+/** Past → newest first (date DESC, arriving_time DESC); Ongoing/Upcoming → ASC. */
+export function eventSortForTab(tab: EventTiming): EventListSort {
+  return tab === "past" ? "desc" : "asc";
+}
+
 export function toEventListFilters(
   tab: EventTiming,
   filters: TabFilterState
 ): EventListFilters {
-  const out: EventListFilters = {};
+  const out: EventListFilters = { sort: eventSortForTab(tab) };
   if (filters.membership) {
     if (tab === "past") out.participated = true;
     else out.registered = true;

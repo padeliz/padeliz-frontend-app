@@ -30,17 +30,20 @@ export function sortedGoogleIdentities(player: Player): PlayerIdentity[] {
     });
 }
 
+/**
+ * App avatar: Google only. The API resolves it as `avatar_url` (primary Google identity,
+ * else the most recently linked one). When a payload lacks it, the same rule runs over the
+ * embedded identities. PDF / uploaded profile images are never used.
+ */
 export function playerAvatarUrl(player: Player): string | undefined {
-  const pdfPrimary = player.uploaded_profile_images?.find(
-    (img) => img.is_pdf_primary
-  )?.url;
-  if (pdfPrimary) return pdfPrimary;
+  if (player.avatar_url) return player.avatar_url;
 
-  for (const identity of sortedGoogleIdentities(player)) {
-    if (identity.avatar_url) return identity.avatar_url;
-  }
+  const withAvatar = sortedGoogleIdentities(player).filter((i) => i.avatar_url);
+  const primary = withAvatar.find((i) => i.is_avatar_primary);
+  if (primary?.avatar_url) return primary.avatar_url;
 
-  return player.uploaded_profile_images?.[0]?.url ?? undefined;
+  // sortedGoogleIdentities is oldest-first, so the latest linked is last.
+  return withAvatar[withAvatar.length - 1]?.avatar_url ?? undefined;
 }
 
 export function playerDisplayName(player: Player): string {

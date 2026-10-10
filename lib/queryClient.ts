@@ -56,11 +56,30 @@ export const queryKeys = {
     list: (viewer: Viewer, eventId?: number) =>
       ['registrations', viewer, eventId ?? 'all'] as const,
   },
-  eligibility: {
-    all: (viewer: Viewer) => ['eligibility', viewer] as const,
-    status: (viewer: Viewer) => ['eligibility', viewer, 'status'] as const,
-    latest: (viewer: Viewer) => ['eligibility', viewer, 'latest'] as const,
-    approved: (viewer: Viewer) => ['eligibility', viewer, 'approved'] as const,
+  levelAssessment: {
+    all: (viewer: Viewer) => ['levelAssessment', viewer] as const,
+    status: (viewer: Viewer) => ['levelAssessment', viewer, 'status'] as const,
+    latest: (viewer: Viewer) => ['levelAssessment', viewer, 'latest'] as const,
+    pending: (viewer: Viewer) => ['levelAssessment', viewer, 'pending'] as const,
+    currentLevel: (viewer: Viewer) =>
+      ['levelAssessment', viewer, 'currentLevel'] as const,
+  },
+  discovery: {
+    all: (viewer: Viewer) => ['discovery', viewer] as const,
+    summary: (viewer: Viewer) => ['discovery', viewer, 'summary'] as const,
+    mediaSources: (viewer: Viewer) =>
+      ['discovery', viewer, 'mediaSources'] as const,
+    suggestFriends: (viewer: Viewer) =>
+      ['discovery', viewer, 'suggestFriends'] as const,
+    searchPlayers: (viewer: Viewer, q: string) =>
+      ['discovery', viewer, 'searchPlayers', q] as const,
+  },
+  studentProofs: {
+    all: (viewer: Viewer) => ['studentProofs', viewer] as const,
+    list: (viewer: Viewer) => ['studentProofs', viewer, 'list'] as const,
+  },
+  levels: {
+    list: (viewer: Viewer) => ['levels', viewer, 'list'] as const,
   },
   bankTransferSettings: (
     viewer: Viewer,

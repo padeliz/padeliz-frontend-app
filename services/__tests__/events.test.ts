@@ -84,6 +84,7 @@ describe('fetchEvents filters', () => {
       range: { date_from: '2026-01-01', date_to: '2026-12-31' },
       page: 1,
       filters: {
+        sort: 'asc',
         registered: true,
         unpaid: true,
         lottery_winner: true,
@@ -98,11 +99,39 @@ describe('fetchEvents filters', () => {
           date_from: '2026-01-01',
           date_to: '2026-12-31',
           page: 1,
+          sort: 'asc',
           registered: 1,
           unpaid: 1,
           lottery_winner: 1,
           'club_ids[]': [3, 5],
         }),
+      })
+    );
+  });
+
+  it('passes sort=desc for the Past timing tab', async () => {
+    apiGetPaginatedMock.mockResolvedValue({
+      data: [makeEvent()],
+      links: { first: null, last: null, prev: null, next: null },
+      meta: {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 1,
+        from: 1,
+        to: 1,
+      },
+    });
+
+    await fetchEvents({
+      range: { date_from: '2026-01-01', date_to: '2026-03-01' },
+      filters: { sort: 'desc' },
+    });
+
+    expect(apiGetPaginatedMock).toHaveBeenCalledWith(
+      '/app/events',
+      expect.objectContaining({
+        query: expect.objectContaining({ sort: 'desc' }),
       })
     );
   });

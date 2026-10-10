@@ -32,7 +32,7 @@ describe('apiDelete', () => {
   });
 
   it('sends no body when none is given', async () => {
-    await apiDelete('/app/my/eligibility/pending/student-proof/3');
+    await apiDelete('/app/my/level-assessment/pending/profile-image/3');
 
     const [, init] = fetchMock.mock.calls[0];
     expect(init.body).toBeUndefined();

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
@@ -17,7 +17,7 @@ export default function({isCompleted, isCurrent, number, color, label}: Props) {
         return (
             <View style={styles.container}>
                 <View style={[styles.circle, {backgroundColor}]}>
-                    <FontAwesome name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
+                    <MaterialCommunityIcons name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
                 </View>
                 <Text style={[styles.text, {fontSize: Fonts.BODY_XS, color: Colors.CREAM}]}>{label}</Text>
             </View>

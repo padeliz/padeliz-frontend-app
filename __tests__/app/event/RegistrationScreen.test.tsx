@@ -29,7 +29,7 @@ import type {
 import {
   DIVISION_ID,
   EDITION_ID,
-  makeApprovedEligibility,
+  makePlayerLevel,
   makeEvent,
   makeRegistration,
 } from '@/testing/fixtures';
@@ -62,8 +62,18 @@ jest.mock('@/services/hooks/useEvents', () => ({
   }),
 }));
 
-jest.mock('@/services/hooks/useEligibility', () => ({
-  useEligibilityGate: () => mockGate,
+jest.mock('@/services/hooks/useLevelAssessment', () => ({
+  useCurrentLevel: () => ({
+    data: mockCurrentLevel,
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
+const mockStartLevelFlow = jest.fn();
+jest.mock('@/services/hooks/useLevelFlow', () => ({
+  useLevelFlow: () => ({ start: mockStartLevelFlow, starting: false, error: null }),
 }));
 
 jest.mock('@/services/hooks/useRegistrations', () => ({
@@ -125,7 +135,7 @@ jest.mock('@/services/registration', () => {
 });
 
 let mockEvent = makeEvent();
-let mockGate: Record<string, unknown> = {};
+let mockCurrentLevel: unknown = null;
 let mockEventRegistrationState: Record<string, unknown> = {};
 let mockBankSettings: BankTransferSettings | null = null;
 const mockRefetch = jest.fn();
@@ -162,16 +172,6 @@ const mockOpenCheckout: EventRegistrationCheckout = {
   payment_proofs: [],
 };
 
-function approvedGate() {
-  return {
-    loading: false,
-    approved: makeApprovedEligibility(),
-    isApproved: true,
-    isPending: false,
-    isMissing: false,
-  };
-}
-
 function setExistingRegistrations(regs: EventRegistration[]) {
   const active = regs.filter((r) => r.lifecycle_status === 'active');
   mockEventRegistrationState = {
@@ -192,7 +192,7 @@ function renderScreen() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockEvent = makeEvent();
-  mockGate = approvedGate();
+  mockCurrentLevel = makePlayerLevel();
   mockBankSettings = null;
   setExistingRegistrations([]);
   (confirmAsync as jest.Mock).mockResolvedValue(true);
@@ -216,33 +216,33 @@ beforeEach(() => {
   });
 });
 
-describe('eligibility gate', () => {
-  it('blocks the flow while the eligibility is still pending', () => {
-    mockGate = {
-      loading: false,
-      approved: null,
-      isApproved: false,
-      isPending: true,
-      isMissing: false,
-    };
+describe('level gate', () => {
+  it('blocks the flow when the player has no level and sends them to Assess my level', () => {
+    mockCurrentLevel = null;
     renderScreen();
 
-    expect(screen.getByTestId('eligibility-gate')).toBeTruthy();
+    expect(screen.getByTestId('level-gate')).toBeTruthy();
     expect(screen.queryByText('Choose Division')).toBeNull();
+
+    fireEvent.press(screen.getByText('Assess my level'));
+    expect(mockStartLevelFlow).toHaveBeenCalledWith('assessment', EDITION_ID);
   });
 
-  it('blocks the flow when no eligibility was ever submitted', () => {
-    mockGate = {
-      loading: false,
-      approved: null,
-      isApproved: false,
-      isPending: false,
-      isMissing: true,
-    };
+  it('does not block a player who already has registrations', () => {
+    mockCurrentLevel = null;
+    setExistingRegistrations([makeRegistration({ payment_status: 'paid' })]);
     renderScreen();
 
-    expect(screen.getByTestId('eligibility-gate')).toBeTruthy();
-    expect(screen.getByText('Check Eligibility')).toBeTruthy();
+    expect(screen.queryByTestId('level-gate')).toBeNull();
+  });
+
+  it('uses the server is_eligible verdict for each division', () => {
+    mockEvent = makeEvent();
+    mockEvent.event_divisions![0].is_eligible = true;
+    mockEvent.event_divisions![1].is_eligible = false;
+    renderScreen();
+
+    expect(screen.getAllByText('Not Eligible')).toHaveLength(1);
   });
 });
 
@@ -535,7 +535,11 @@ describe('payment step', () => {
 
     await waitFor(() => expect(screen.getByTestId('bank-transfer-details')).toBeTruthy());
     fireEvent.press(screen.getByTestId('payment-proof-upload'));
-    await waitFor(() => expect(screen.getByTestId('submit-bank-proof')).toBeTruthy());
+    // PhotoUploadSlot sets proofUri asynchronously after ImagePicker resolves.
+    await waitFor(() => {
+      const submit = screen.getByTestId('submit-bank-proof');
+      expect(submit.props.accessibilityState?.disabled).not.toBe(true);
+    });
     fireEvent.press(screen.getByTestId('submit-bank-proof'));
 
     await waitFor(() =>

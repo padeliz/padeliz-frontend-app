@@ -16,7 +16,7 @@ type Props = {
   /** When true, catalog is visible but no edits (awaiting proof). */
   editLocked?: boolean;
   /**
-   * Presentational catalog: no actions and no eligibility/capacity dimming.
+   * Presentational catalog: no actions and no level-fit/capacity dimming.
    * Distinct from `editLocked`, which keeps the registration-flow styling.
    */
   readonly?: boolean;

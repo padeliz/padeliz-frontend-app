@@ -338,9 +338,14 @@ export default function ShareReferralModal({
                           onPress={() => void handleCreate()}
                           testID="create-referral-code"
                         >
-                          <Text style={styles.primaryBtnText}>
-                            {busy ? 'Creating…' : 'Create code'}
-                          </Text>
+                          {busy ? (
+                            <ActivityIndicator
+                              color={Colors.WHITE}
+                              testID="create-referral-code-loading"
+                            />
+                          ) : (
+                            <Text style={styles.primaryBtnText}>Create code</Text>
+                          )}
                         </Pressable>
                       </View>
                     </View>

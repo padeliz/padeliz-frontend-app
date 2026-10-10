@@ -9,6 +9,7 @@ import {
   EDITION_ID,
   makeEvent,
   makeRegistration,
+  makePlayerLevel,
   makeRegistrationWithStatus,
 } from '@/testing/fixtures';
 
@@ -34,15 +35,26 @@ jest.mock('@/services/hooks/useEvents', () => ({
   }),
 }));
 
-let mockGate = {
-  loading: false,
-  approved: null as unknown,
-  isApproved: false,
-  isPending: false,
-  isMissing: true,
-};
-jest.mock('@/services/hooks/useEligibility', () => ({
-  useEligibilityGate: () => mockGate,
+let mockCurrentLevel: unknown = null;
+jest.mock('@/services/hooks/useLevelAssessment', () => ({
+  useCurrentLevel: () => ({
+    data: mockCurrentLevel,
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
+const mockStartLevelFlow = jest.fn();
+let mockLevelStarting = false;
+jest.mock('@/services/hooks/useLevelFlow', () => ({
+  useLevelFlow: () => ({
+    start: mockStartLevelFlow,
+    get starting() {
+      return mockLevelStarting;
+    },
+    error: null,
+  }),
 }));
 
 let mockRegistrations: EventRegistration[] = [];
@@ -117,22 +129,16 @@ function openTab(label: TabLabel) {
   fireEvent.press(screen.getByText(label));
 }
 
-function setGate(overrides: Partial<typeof mockGate>) {
-  mockGate = {
-    loading: false,
-    approved: null,
-    isApproved: false,
-    isPending: false,
-    isMissing: false,
-    ...overrides,
-  };
+function setLevel(hasLevel: boolean) {
+  mockCurrentLevel = hasLevel ? makePlayerLevel() : null;
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockEvent = makeEvent();
+  mockLevelStarting = false;
   setRegistrations([]);
-  setGate({ isMissing: true });
+  setLevel(false);
 });
 
 describe('cover, description, organizer, schedule, badges', () => {
@@ -284,6 +290,16 @@ describe('hero meta and tabs', () => {
     expect(screen.queryByTestId('event-tab-divisions')).toBeNull();
   });
 
+  it('hides the Deadlines tab when the event is past', () => {
+    mockEvent = makeEvent({ date: '2000-01-01' });
+    renderScreen();
+
+    for (const label of ['Info', 'Divisions', 'Description']) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
+    expect(screen.queryByText('Deadlines')).toBeNull();
+  });
+
   it('spaces Deadlines cards with column gap and no nested sectionFirst', () => {
     renderScreen();
     openTab('Deadlines');
@@ -325,7 +341,7 @@ describe('hero meta and tabs', () => {
   });
 
   it('shows payment due and overdue on the Deadlines tab', () => {
-    setGate({ isApproved: true, approved: {} });
+    setLevel(true);
     setRegistrations([
       makeRegistration({ id_registration: 501, payment_status: 'unpaid' }),
       makeRegistration({
@@ -353,7 +369,7 @@ describe('hero meta and tabs', () => {
   });
 
   it('shows division color badges on the Divisions tab', () => {
-    setGate({ isApproved: true, approved: {} });
+    setLevel(true);
     setRegistrations([makeRegistration({ payment_status: 'paid' })]);
     renderScreen();
     openTab('Divisions');
@@ -369,7 +385,7 @@ describe('hero meta and tabs', () => {
   });
 
   it('renders Cancel Registration as a sibling below the tab body', () => {
-    setGate({ isApproved: true, approved: {} });
+    setLevel(true);
     setRegistrations([makeRegistration({ payment_status: 'paid' })]);
     renderScreen();
 
@@ -384,7 +400,7 @@ describe('hero meta and tabs', () => {
   });
 
   it('keeps Cancel out of the sticky CTA bar', () => {
-    setGate({ isApproved: true, approved: {} });
+    setLevel(true);
     setRegistrations([makeRegistration({ payment_status: 'paid' })]);
     renderScreen();
 
@@ -394,43 +410,66 @@ describe('hero meta and tabs', () => {
   });
 });
 
-describe('eligibility gating', () => {
-  it('does not route a pending eligibility into the registration flow', () => {
-    setGate({ isPending: true });
+describe('level CTA', () => {
+  it('sends a player without a level to Assess my level (Discovery intercept first)', () => {
+    setLevel(false);
     renderScreen();
 
-    fireEvent.press(screen.getByText('Eligibility Check in Pending'));
+    fireEvent.press(screen.getByText('Assess my level'));
 
+    expect(mockStartLevelFlow).toHaveBeenCalledWith('assessment', EDITION_ID);
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('sends a player without any eligibility to the eligibility check', () => {
-    setGate({ isMissing: true });
+  it('shows CTA loading while the level flow is starting', () => {
+    setLevel(false);
+    mockLevelStarting = true;
     renderScreen();
 
-    fireEvent.press(screen.getByText('Check Eligibility'));
+    expect(screen.getByTestId('event-cta-loading')).toBeTruthy();
+  });
 
+  it('shows Register for a player with a level and starts the registration flow', () => {
+    setLevel(true);
+    renderScreen();
+
+    expect(screen.queryByText('Assess my level')).toBeNull();
+    fireEvent.press(screen.getByText('Register'));
+
+    expect(mockStartLevelFlow).toHaveBeenCalledWith('registration', EDITION_ID);
+  });
+
+  it('still shows Register when a re-assessment is pending but a level exists', () => {
+    // A pending assessment never reaches the CTA: only `player_levels` decides.
+    setLevel(true);
+    renderScreen();
+
+    expect(screen.getByText('Register')).toBeTruthy();
+    expect(screen.queryByText('Assess my level')).toBeNull();
+  });
+
+  it('opens an existing payment step directly without the Discovery intercept', () => {
+    setLevel(true);
+    setRegistrations([makeRegistration({ payment_status: 'unpaid' })]);
+    renderScreen();
+
+    fireEvent.press(screen.getByText('Pay Now'));
+
+    expect(mockStartLevelFlow).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/event/eligibility-check',
-      params: { eventId: String(EDITION_ID) },
+      pathname: '/event/registration',
+      params: { eventId: String(EDITION_ID), initialStep: '2' },
     });
   });
 
-  it('opens registration once an eligibility is approved', () => {
-    setGate({ isApproved: true, approved: {} });
+  it('has no eligibility wording left', () => {
     renderScreen();
-
-    fireEvent.press(screen.getByText('Register Now'));
-
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/event/registration',
-      params: { eventId: String(EDITION_ID) },
-    });
+    expect(screen.queryByText(/eligib/i)).toBeNull();
   });
 });
 
 describe('Your divisions on the Divisions tab', () => {
-  beforeEach(() => setGate({ isApproved: true, approved: {} }));
+  beforeEach(() => setLevel(true));
 
   it('lists every active division and labels null as Event-wide', () => {
     setRegistrations([
@@ -469,14 +508,14 @@ describe('Your divisions on the Divisions tab', () => {
 });
 
 describe('CTA from the live registrations', () => {
-  beforeEach(() => setGate({ isApproved: true, approved: {} }));
+  beforeEach(() => setLevel(true));
 
   it('shows a loader until registrations settle', () => {
     setRegistrations([], true);
     renderScreen();
 
     expect(screen.getByTestId('cta-loading')).toBeTruthy();
-    expect(screen.queryByText('Register Now')).toBeNull();
+    expect(screen.queryByText('Register')).toBeNull();
     expect(screen.queryByText('Pay Now')).toBeNull();
   });
 
@@ -510,7 +549,7 @@ describe('CTA from the live registrations', () => {
 
     expect(screen.getByText('Registration Review in Pending')).toBeTruthy();
     expect(screen.queryByText('Pay Now')).toBeNull();
-    expect(screen.queryByText('Register Now')).toBeNull();
+    expect(screen.queryByText('Register')).toBeNull();
 
     fireEvent.press(screen.getByText('Registration Review in Pending'));
     expect(mockPush).toHaveBeenCalledWith({
@@ -524,16 +563,31 @@ describe('CTA from the live registrations', () => {
     renderScreen();
 
     expect(screen.queryByText('Pay Now')).toBeNull();
-    expect(screen.queryByText('Register Now')).toBeNull();
+    expect(screen.queryByText('Register')).toBeNull();
     expect(screen.queryByText('Registration Review in Pending')).toBeNull();
   });
 
-  it('hides the CTA once the event has ended', () => {
-    mockEvent = makeEvent({ date: '2000-01-01' });
+  it('hides the CTA once the event has ended without participation', () => {
+    mockEvent = makeEvent({ date: '2000-01-01', has_participated: false });
     renderScreen();
 
-    expect(screen.queryByText('Register Now')).toBeNull();
+    expect(screen.queryByText('Register')).toBeNull();
+    expect(screen.queryByText('Participated')).toBeNull();
     expect(screen.queryByTestId('cta-bar')).toBeNull();
+  });
+
+  it('shows grey disabled Participated when past and has_participated', () => {
+    mockEvent = makeEvent({ date: '2000-01-01', has_participated: true });
+    renderScreen();
+
+    const button = screen.getByRole('button', { name: 'Participated' });
+    expect(button.props.accessibilityState).toMatchObject({ disabled: true });
+    expect(button.props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ backgroundColor: expect.any(String) })])
+    );
+    fireEvent.press(screen.getByText('Participated'));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockStartLevelFlow).not.toHaveBeenCalled();
   });
 
   it('shows a disabled, non-navigating Registration closed after the deadline', () => {
@@ -542,7 +596,7 @@ describe('CTA from the live registrations', () => {
     });
     renderScreen();
 
-    expect(screen.queryByText('Register Now')).toBeNull();
+    expect(screen.queryByText('Register')).toBeNull();
     const button = screen.getByRole('button', { name: 'Registration closed' });
     expect(button.props.accessibilityState).toMatchObject({ disabled: true });
     fireEvent.press(screen.getByText('Registration closed'));
@@ -566,7 +620,7 @@ describe('CTA from the live registrations', () => {
 });
 
 describe('self-cancel', () => {
-  beforeEach(() => setGate({ isApproved: true, approved: {} }));
+  beforeEach(() => setLevel(true));
 
   it('sends the chosen cancel_reason and refreshes the registration', async () => {
     setRegistrations([makeRegistration({ payment_status: 'paid' })]);

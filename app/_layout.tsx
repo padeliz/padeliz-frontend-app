@@ -61,7 +61,7 @@ function RootNavigator() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <ReferralLinkListener />
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         {ROOT_STACK_SCREENS.map((screen) => (
           <Stack.Screen
             key={screen.name}

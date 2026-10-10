@@ -1,5 +1,5 @@
 import { View, Text, Image, StyleSheet } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import { EventDetails } from '@/types/types';
@@ -20,11 +20,11 @@ export default function EventSummaryCard({ event }: Props) {
         <View style={styles.info}>
           <Text style={styles.title}>{event.eventName}</Text>
           <View style={styles.row}>
-            <FontAwesome name="map-marker" size={14} color={Colors.CREAM} />
+            <MaterialCommunityIcons name="map-marker" size={14} color={Colors.CREAM} />
             <Text style={styles.detail}>{event.location}</Text>
           </View>
           <View style={styles.row}>
-            <FontAwesome name="calendar" size={14} color={Colors.CREAM} />
+            <MaterialCommunityIcons name="calendar" size={14} color={Colors.CREAM} />
             <Text style={styles.detail}>{event.date}</Text>
           </View>
         </View>

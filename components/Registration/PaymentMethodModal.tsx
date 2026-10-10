@@ -11,11 +11,11 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import type { BankTransferSettings, RegistrationPaymentMethod } from '@/types/api';
-import PhotoUploadSlot from '@/components/Eligibility/PhotoUploadSlot';
+import PhotoUploadSlot from '@/components/LevelAssessment/PhotoUploadSlot';
 
 type Props = {
   visible: boolean;
@@ -31,7 +31,7 @@ const METHODS: {
   id: RegistrationPaymentMethod;
   name: string;
   description: string;
-  icon: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 }[] = [
   { id: 'bank_transfer', name: 'Bank Transfer', description: 'Manual transfer and proof upload', icon: 'bank' },
   { id: 'netopia', name: 'Netopia Payments', description: 'Direct payment gateway', icon: 'credit-card' },
@@ -99,7 +99,7 @@ export default function PaymentMethodModal({
                       onPress={() => pick(method.id)}
                       testID={`pay-method-${method.id}`}
                     >
-                      <FontAwesome name={method.icon as any} size={18} color={Colors.WHITE} />
+                      <MaterialCommunityIcons name={method.icon} size={18} color={Colors.WHITE} />
                       <View style={styles.methodInfo}>
                         <Text style={styles.methodName}>{method.name}</Text>
                         <Text style={styles.methodDescription}>{method.description}</Text>

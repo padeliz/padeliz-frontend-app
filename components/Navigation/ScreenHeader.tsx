@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 
@@ -40,7 +40,7 @@ export default function ScreenHeader({
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <FontAwesome name="chevron-left" size={16} color={Colors.WHITE} />
+          <MaterialCommunityIcons name="chevron-left" size={16} color={Colors.WHITE} />
         </Pressable>
       ) : (
         <View style={styles.stackSide} />

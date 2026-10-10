@@ -9,6 +9,13 @@ type Props = {
   /** 1-indexed steps that can be pressed. */
   enabledSteps?: number[];
   onStepPress?: (step: number) => void;
+  /** 1-indexed step currently showing a save loader in its icon. */
+  loadingStep?: number | null;
+  /**
+   * When set, previous steps show a check only if listed here.
+   * When omitted, any previous step (index < current) is treated as completed (registration).
+   */
+  completedSteps?: number[];
 };
 
 export default function Steps({
@@ -17,16 +24,21 @@ export default function Steps({
   color = Colors.ORANGE,
   enabledSteps = [],
   onStepPress,
+  loadingStep = null,
+  completedSteps,
 }: Props) {
   return (
     <View style={styles.container}>
       {labels.map((label, index) => {
         const stepNumber = index + 1;
-        const isCompleted = stepNumber < currentStep;
+        const isPrevious = stepNumber < currentStep;
+        const isCompleted = completedSteps
+          ? isPrevious && completedSteps.includes(stepNumber)
+          : isPrevious;
         const isCurrent = stepNumber === currentStep;
         const isFinalStep = stepNumber === labels.length;
         const isLast = index === labels.length - 1;
-        const lineColor = stepNumber < currentStep ? color : Colors.GRAY;
+        const lineColor = isCompleted ? color : Colors.GRAY;
         const enabled = enabledSteps.includes(stepNumber);
 
         return (
@@ -39,6 +51,7 @@ export default function Steps({
               stepNumber={stepNumber}
               color={color}
               enabled={enabled}
+              loading={loadingStep === stepNumber}
               onPress={
                 enabled && onStepPress ? () => onStepPress(stepNumber) : undefined
               }

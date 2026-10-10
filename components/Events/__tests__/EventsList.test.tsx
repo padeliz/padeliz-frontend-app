@@ -2,15 +2,15 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import EventsList from '@/components/Events/EventsList';
 import { EVENTS_CHIP_SCROLL_STYLE } from '@/services/eventsListLayout';
+import type { EventListFilters } from '@/services/events';
 let mockUser: { id: string } | null = null;
 
 jest.mock('@/context/auth', () => ({
   useAuth: () => ({ user: mockUser, isLoading: false }),
 }));
 
-jest.mock('@/services/hooks/useEvents', () => ({
-  useEventCount: () => 0,
-  useEventsPager: () => ({
+const mockUseEventsPager = jest.fn(
+  (_range: unknown, _filters?: EventListFilters) => ({
     events: [require('@/testing/fixtures').makeEvent()],
     isInitialLoading: false,
     loadingMore: false,
@@ -19,7 +19,12 @@ jest.mock('@/services/hooks/useEvents', () => ({
     total: 3,
     loadMore: jest.fn(),
     refetch: jest.fn(),
-  }),
+  })
+);
+
+jest.mock('@/services/hooks/useEvents', () => ({
+  useEventCount: () => 0,
+  useEventsPager: (...args: unknown[]) => mockUseEventsPager(...(args as [unknown, EventListFilters?])),
 }));
 
 jest.mock('@/services/events', () => ({
@@ -33,6 +38,7 @@ jest.mock('@/services/events', () => ({
 describe('EventsList', () => {
   beforeEach(() => {
     mockUser = null;
+    mockUseEventsPager.mockClear();
   });
 
   it('uses shared chip scroll layout with flexShrink 0', () => {
@@ -91,5 +97,24 @@ describe('EventsList', () => {
     fireEvent.press(screen.getByTestId('event-card-42'));
 
     expect(onSelectEvent).toHaveBeenCalledWith('/event/42/tour-org-minitour-21');
+  });
+
+  it('sends sort=asc for Upcoming and sort=desc when Past is selected', async () => {
+    render(<EventsList onSelectEvent={jest.fn()} />);
+
+    await waitFor(() => expect(mockUseEventsPager).toHaveBeenCalled());
+    expect(mockUseEventsPager).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sort: 'asc' })
+    );
+
+    fireEvent.press(screen.getByText('Past'));
+
+    await waitFor(() =>
+      expect(mockUseEventsPager).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ sort: 'desc' })
+      )
+    );
   });
 });

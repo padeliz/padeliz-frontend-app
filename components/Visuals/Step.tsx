@@ -1,5 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 
@@ -12,6 +12,8 @@ type Props = {
   color: string;
   enabled?: boolean;
   onPress?: () => void;
+  /** Replace the step icon/number with a loader while that step is saving. */
+  loading?: boolean;
 };
 
 export default function Step({
@@ -23,23 +25,34 @@ export default function Step({
   color,
   enabled = false,
   onPress,
+  loading = false,
 }: Props) {
-  const circleColor = isCompleted || isCurrent ? color : Colors.CREAM_20;
-  const labelColor = isCurrent ? color : Colors.CREAM;
+  const circleColor = isCompleted || isCurrent || loading ? color : Colors.CREAM_20;
+  const labelColor = isCurrent || loading ? color : Colors.CREAM;
   const content = (
     <>
       <View style={[styles.circle, { backgroundColor: circleColor }]}>
-        {isCompleted && (
-          <FontAwesome name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
-        )}
-        {isCurrent && isFinalStep && (
-          <FontAwesome name="flag" size={Fonts.BODY_S} color={Colors.WHITE} />
-        )}
-        {isCurrent && !isFinalStep && (
-          <Text style={styles.number}>{stepNumber}</Text>
-        )}
-        {!isCompleted && !isCurrent && (
-          <Text style={styles.number}>{stepNumber}</Text>
+        {loading ? (
+          <ActivityIndicator
+            color={Colors.WHITE}
+            size="small"
+            testID={`wizard-step-${stepNumber}-loading`}
+          />
+        ) : (
+          <>
+            {isCompleted && (
+              <MaterialCommunityIcons name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
+            )}
+            {isCurrent && isFinalStep && (
+              <MaterialCommunityIcons name="flag" size={Fonts.BODY_S} color={Colors.WHITE} />
+            )}
+            {isCurrent && !isFinalStep && (
+              <Text style={styles.number}>{stepNumber}</Text>
+            )}
+            {!isCompleted && !isCurrent && (
+              <Text style={styles.number}>{stepNumber}</Text>
+            )}
+          </>
         )}
       </View>
       <Text style={[styles.label, { color: labelColor }]}>{label}</Text>

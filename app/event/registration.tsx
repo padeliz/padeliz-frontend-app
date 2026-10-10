@@ -21,7 +21,7 @@ import * as Fonts from '@/constants/Fonts';
 import Steps from '@/components/Visuals/Steps';
 import Button from '@/components/Buttons/Button';
 import ScreenHeader from '@/components/Navigation/ScreenHeader';
-import StepNavButtons from '@/components/Eligibility/StepNavButtons';
+import StepNavButtons from '@/components/LevelAssessment/StepNavButtons';
 import StepDivision, {
   type DivisionCardState,
 } from '@/components/Registration/StepDivision';
@@ -37,11 +37,9 @@ import CancelRegistrationModal, {
 } from '@/components/Registration/CancelRegistrationModal';
 import type { PaymentLine } from '@/components/Registration/PaymentDetailsCard';
 import { useEvent } from '@/services/hooks/useEvents';
-import { useEligibilityGate } from '@/services/hooks/useEligibility';
-import {
-  eventDetailPath,
-  eventEligibilityPath,
-} from '@/utils/eventPaths';
+import { useCurrentLevel } from '@/services/hooks/useLevelAssessment';
+import { useLevelFlow } from '@/services/hooks/useLevelFlow';
+import { eventDetailPath } from '@/utils/eventPaths';
 import {
   useBankTransferSettings,
   useEventRegistration,
@@ -330,7 +328,8 @@ export default function RegistrationScreen() {
 
   const eventId = Number(eventIdParam);
   const { data: event, loading: eventLoading } = useEvent(eventId);
-  const gate = useEligibilityGate();
+  const { data: currentLevel, loading: levelLoading } = useCurrentLevel();
+  const { start: startLevelFlow, starting: levelStarting } = useLevelFlow();
   const {
     registrations: existingRegistrations,
     loading: registrationLoading,
@@ -553,7 +552,7 @@ export default function RegistrationScreen() {
     />
   );
 
-  if (eventLoading || registrationLoading || gate.loading) {
+  if (eventLoading || registrationLoading || levelLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         {Header}
@@ -575,38 +574,27 @@ export default function RegistrationScreen() {
     );
   }
 
-  if (!gate.isApproved && registrations.length === 0) {
+  if (currentLevel === null && registrations.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
         {Header}
-        <View style={styles.gate} testID="eligibility-gate">
-          <Text style={styles.gateTitle}>
-            {gate.isPending ? 'Eligibility Check in Pending' : 'Eligibility Required'}
-          </Text>
+        <View style={styles.gate} testID="level-gate">
+          <Text style={styles.gateTitle}>Level Required</Text>
           <Text style={styles.gateBody}>
-            {gate.isPending
-              ? 'We are still reviewing your eligibility request. You can register as soon as it is approved.'
-              : 'Registration opens once your eligibility request has been approved.'}
+            Registration opens once you have a player level. Assess your level to get started.
           </Text>
-          {gate.isPending ? (
-            <Button label="Back to Event" variant="secondary" onPress={goBackToEvent} />
-          ) : (
-            <Button
-              label="Check Eligibility"
-              onPress={() =>
-                router.replace(eventEligibilityPath(eventId) as any)
-              }
-            />
-          )}
+          <Button
+            label="Assess my level"
+            onPress={() => void startLevelFlow('assessment', eventId)}
+            loading={levelStarting}
+            testID="level-gate-assess"
+          />
         </View>
       </SafeAreaView>
     );
   }
 
-  const details = eventToDetails(
-    event,
-    registrationToEventStatus(registrations, gate)
-  );
+  const details = eventToDetails(event, registrationToEventStatus(registrations));
 
   const toggleDivision = (division: DivisionDetails) => {
     if (editLocked) return;

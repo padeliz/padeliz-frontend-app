@@ -12,7 +12,7 @@
 
 // ---------- Response envelopes ----------
 
-/** Custom endpoints (auth, eligibility status/latest/approved/discard/pending). */
+/** Custom endpoints (auth, level assessment, discovery, student proofs, ...). */
 export interface ApiEnvelope<T> {
   success: boolean;
   message: string;
@@ -82,6 +82,13 @@ export interface EventDivision {
   /** Entry fee in RON for this division (fees live on divisions, not events). */
   entry_fee: number;
   skill_order?: number;
+  level_min?: string | number | null;
+  level_max?: string | number | null;
+  /**
+   * Server verdict for the signed-in player (level fits the division bounds).
+   * Absent/null for guests.
+   */
+  is_eligible?: boolean | null;
   court?: string | null;
   playing_start_time: string | null; // "HH:MM:SS"
   playing_end_time: string | null; // "HH:MM:SS"
@@ -140,6 +147,11 @@ export interface Event {
   lotteries?: unknown[];
   /** Ordered badges from the API; client renders only. */
   badges?: EventBadge[];
+  /**
+   * GET /app/events/{id} only: the auth player has an EventParticipation row for
+   * this event (never inferred from registration / payment badges). `false` for guests.
+   */
+  has_participated?: boolean;
 }
 
 /** data of GET /app/events/filter-options */
@@ -154,6 +166,7 @@ export interface EventHistoryItem {
   id_event: number;
   name: string;
   date: string;
+  slug?: string | null;
   division_titles: string[];
 }
 
@@ -185,6 +198,7 @@ export interface PlayerIdentity {
   email: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  is_avatar_primary?: boolean;
   linked_at: number;
   last_login_at: number | null;
 }
@@ -201,6 +215,8 @@ export interface Player {
   playtomic_id: string | null;
   rankedin_id: string | null;
   user_types: string[];
+  /** Google avatar resolved by the API (primary, else latest linked). Google only. */
+  avatar_url?: string | null;
   instagram_username: string | null;
   facebook_username: string | null;
   inserted_at: number;
@@ -225,51 +241,188 @@ export interface AuthData {
   user_type: string; // "player"
 }
 
-// ---------- Eligibility ----------
+// ---------- Level progression (assessment, discovery, student proofs) ----------
 
-export type ReviewStatus = "pending" | "approved" | "rejected" | "discarded";
+export type AssessmentReviewStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "discarded";
 
-export interface Eligibility {
-  id_eligibility: number;
-  player_id: number;
-  event_ids: number[] | null;
-  /** Full events for event_ids (embedded by the API so no by-id lookup is needed). */
-  events?: Event[];
-  media_source: number[] | null;
-  friends_source: string[] | null;
-  racket_experience: string[] | null; // "none" | "tennis" | "squash" | "badminton" | "padel"
-  phone: string | null;
-  first_name: string | null;
-  middle_name: string | null;
-  last_name: string | null;
-  birth_year: number | null;
-  birth_month: number | null;
-  birth_day: number | null;
-  being_student: boolean | null;
-  playtomic_id: string | null;
-  rankedin_id: string | null;
-  instagram_username: string | null;
-  facebook_username: string | null;
-  submitted_at: number | null;
-  reviewed_at: number | null;
-  ready_for_review: boolean;
-  review_status: ReviewStatus;
-  review_message: string | null;
-  resubmitted_at: number | null;
-  inserted_at: number;
-  updated_at: number | null;
-  student_proofs: UploadedImage[];
-  portrait_photos: UploadedImage[];
+/** Custom field codes the app writes into a pending level assessment. */
+export type AssessmentFieldCode =
+  | "racket_experience"
+  | "big_tournament_division"
+  | "year_of_birth"
+  | "playtomic_id"
+  | "rankedin_id"
+  | "gender"
+  | "instagram_username"
+  | "facebook_username";
+
+/** One entry of the `racket_experience` json custom field. */
+export interface RacketExperienceEntry {
+  sport: string;
+  level: string;
+  years_of_playing?: number;
+  matches_played?: number;
+  lessons_had?: number;
 }
 
-export interface EligibilityStatus {
-  latest: ReviewStatus | null;
+export interface AssessmentFieldValue {
+  id_player_custom_field_value: number;
+  player_custom_field_id: number;
+  /** Presenter-resolved answer (text, integer, option label, or json). */
+  value: unknown;
+  value_text?: string | null;
+  value_integer?: number | null;
+  value_json?: unknown;
+  field?: { id_player_custom_field: number; code: string; type?: string } | null;
+}
+
+export interface AssessmentProfileImage {
+  id: number;
+  url: string;
+  is_pdf_primary?: boolean;
+  uploaded_via?: string | null;
+  uploaded_via_level_assessment_id?: number | null;
+  original_filename?: string | null;
+}
+
+/** A level the player holds (data of GET /app/my/level-assessment/current-level). */
+export interface PlayerLevel {
+  id_player_level: number;
+  player_id: number;
+  /** Two-decimal numeric level, e.g. "3.25". */
+  level: string;
+  band_name: string | null;
+  player_level_assessment_id: number | null;
+  event_participation_id: number | null;
+  inserted_at: number;
+  updated_at: number | null;
+}
+
+export interface PlayerLevelAssessment {
+  id_player_level_assessment: number;
+  player_id: number;
+  player_custom_field_submission_id: number | null;
+  submitted_at: number | null;
+  resubmitted_at: number | null;
+  ready_for_review: boolean;
+  reviewed_at: number | null;
+  review_status: AssessmentReviewStatus;
+  review_message: string | null;
+  inserted_at: number;
+  updated_at: number | null;
+  submission?: {
+    id_player_custom_field_submission: number;
+    values: AssessmentFieldValue[] | null;
+  } | null;
+  player_level?: PlayerLevel | null;
+  profile_images?: AssessmentProfileImage[];
+}
+
+export interface LevelAssessmentStatus {
+  latest: AssessmentReviewStatus | null;
   overall: {
     approved: number;
     pending: number;
     discarded: number;
     rejected: number;
   };
+}
+
+/** Item of GET /app/levels. */
+export interface Level {
+  id_level: number;
+  name: string;
+  level_min: string | number;
+  level_max: string | number;
+}
+
+export interface MediaSource {
+  id_media_source: number;
+  code: string;
+  label: string;
+  sort_order: number;
+}
+
+export interface PlayerFriendsSource {
+  id_player_friends_source: number;
+  player_id: number;
+  friend_player_id: number | null;
+  friend_name?: string | null;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+/** data of GET /app/my/discovery. */
+export interface DiscoverySummary {
+  media_sources: MediaSource[];
+  media_source_ids: number[];
+  friends: PlayerFriendsSource[];
+  max_friends: number;
+  friends_selected: boolean;
+  needs_media: boolean;
+  needs_friends: boolean;
+}
+
+/** One friend row sent to PUT /app/my/discovery/friends. */
+export interface FriendInput {
+  friend_player_id?: number | null;
+  full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+
+/** Item of GET /app/my/discovery/suggest-friends. */
+export interface FriendSuggestion {
+  friend_player_id: number;
+  full_name: string;
+  touched_at: number;
+}
+
+/** Item of GET /app/my/discovery/search-players (contacts are masked server-side). */
+export interface PlayerSearchResult {
+  id_player: number;
+  name: string;
+  email_masked: string | null;
+  phone_masked: string | null;
+  avatar_url: string | null;
+}
+
+export interface PlayerStudentProofFile {
+  id_player_student_proof_file: number;
+  student_proof_id: number;
+  sort_order: number;
+  url: string;
+  inserted_at: number;
+  updated_at: number | null;
+}
+
+export interface PlayerStudentProof {
+  id_player_student_proof: number;
+  player_id: number;
+  /** "YYYY-MM-DD". */
+  student_until: string | null;
+  sort_order?: number;
+  ready_for_review: boolean;
+  review_status: AssessmentReviewStatus;
+  review_message: string | null;
+  submitted_at: number | null;
+  reviewed_at: number | null;
+  /** 0-3 files (a pending proof needs >=1 before it can be marked ready). */
+  files: PlayerStudentProofFile[];
+  inserted_at: number;
+  updated_at: number | null;
+}
+
+/** data of GET /app/my/student-proofs. */
+export interface StudentProofsIndex {
+  has_active: boolean;
+  pending: PlayerStudentProof | null;
+  items: PlayerStudentProof[];
 }
 
 // ---------- Event registrations & payments ----------
@@ -586,25 +739,4 @@ export interface DeviceTokenData {
   id_player_device_token: number;
   token: string;
   platform: string | null;
-}
-
-/** Body for PATCH /app/my/eligibility/pending — all fields optional. */
-export interface PatchPendingBody {
-  duplicate_id?: number;
-  event_ids?: number[];
-  media_source?: number[];
-  friends_source?: string[];
-  racket_experience?: string[];
-  playtomic_id?: string;
-  rankedin_id?: string;
-  first_name?: string;
-  middle_name?: string;
-  last_name?: string;
-  phone?: string;
-  birth_year?: number;
-  birth_month?: number;
-  birth_day?: number;
-  being_student?: boolean;
-  instagram_username?: string;
-  facebook_username?: string;
 }

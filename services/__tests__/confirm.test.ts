@@ -1,5 +1,5 @@
 import { Alert, Platform } from 'react-native';
-import { confirmAsync } from '@/services/confirm';
+import { confirmAsync, confirmDirtyLeaveAsync } from '@/services/confirm';
 
 describe('confirmAsync', () => {
   const originalOS = Platform.OS;
@@ -65,3 +65,27 @@ describe('confirmAsync', () => {
     expect(Alert.alert).toHaveBeenCalled();
   });
 });
+
+describe('confirmDirtyLeaveAsync', () => {
+  beforeEach(() => {
+    jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it.each([
+    ['Leave without saving', 'discard'],
+    ['Save & leave', 'save'],
+    ['Continue editing', 'stay'],
+  ] as const)('resolves %s → %s', async (label, choice) => {
+    (Alert.alert as jest.Mock).mockImplementation((_title, _message, buttons) => {
+      const btn = buttons.find((b: { text: string }) => b.text === label);
+      btn?.onPress?.();
+    });
+
+    await expect(confirmDirtyLeaveAsync()).resolves.toBe(choice);
+  });
+});
+

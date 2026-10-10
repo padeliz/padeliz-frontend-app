@@ -2,7 +2,12 @@
 import type {
   Event,
   EventRegistration,
-  Eligibility,
+  DiscoverySummary,
+  MediaSource,
+  PlayerLevel,
+  PlayerLevelAssessment,
+  PlayerStudentProof,
+  PlayerStudentProofFile,
   Player,
   PlayerEmail,
   PlayerIdentity,
@@ -55,6 +60,7 @@ export function makeEvent(overrides: Partial<Event> = {}): Event {
         entry_fee: 45,
         playing_start_time: '11:00:00',
         playing_end_time: '14:00:00',
+        is_eligible: true,
         division: {
           id_division: 2,
           name: 'Students Rookies',
@@ -70,6 +76,7 @@ export function makeEvent(overrides: Partial<Event> = {}): Event {
         entry_fee: 60,
         playing_start_time: '14:30:00',
         playing_end_time: '18:00:00',
+        is_eligible: true,
         division: {
           id_division: 3,
           name: 'Intermediate',
@@ -122,38 +129,94 @@ export function makeRegistrationWithStatus(
   });
 }
 
-export function makeApprovedEligibility(
-  overrides: Partial<Eligibility> = {}
-): Eligibility {
+export function makePlayerLevel(overrides: Partial<PlayerLevel> = {}): PlayerLevel {
   return {
-    id_eligibility: 11,
+    id_player_level: 1,
     player_id: 9,
-    event_ids: [EDITION_ID],
-    media_source: null,
-    friends_source: null,
-    racket_experience: null,
-    phone: '0700000000',
-    first_name: 'Ana',
-    middle_name: null,
-    last_name: 'Pop',
-    birth_year: 2003,
-    birth_month: 4,
-    birth_day: 12,
-    being_student: true,
-    playtomic_id: null,
-    rankedin_id: null,
-    instagram_username: null,
-    facebook_username: null,
-    submitted_at: 1_699_000_000,
-    reviewed_at: 1_699_500_000,
-    ready_for_review: true,
-    review_status: 'approved',
-    review_message: null,
+    level: '3.25',
+    band_name: 'Intermediate',
+    player_level_assessment_id: 5,
+    event_participation_id: null,
+    inserted_at: 1_700_000_000,
+    updated_at: null,
+    ...overrides,
+  };
+}
+
+export function makeAssessment(
+  overrides: Partial<PlayerLevelAssessment> = {}
+): PlayerLevelAssessment {
+  return {
+    id_player_level_assessment: 5,
+    player_id: 9,
+    player_custom_field_submission_id: 77,
+    submitted_at: null,
     resubmitted_at: null,
-    inserted_at: 1_699_000_000,
-    updated_at: 1_699_500_000,
-    student_proofs: [],
-    portrait_photos: [],
+    ready_for_review: false,
+    reviewed_at: null,
+    review_status: 'pending',
+    review_message: null,
+    inserted_at: 1_700_000_000,
+    updated_at: null,
+    submission: { id_player_custom_field_submission: 77, values: [] },
+    player_level: null,
+    profile_images: [],
+    ...overrides,
+  };
+}
+
+export const MEDIA_SOURCES: MediaSource[] = [
+  { id_media_source: 1, code: 'instagram', label: 'Instagram', sort_order: 1 },
+  { id_media_source: 2, code: 'tiktok', label: 'TikTok', sort_order: 2 },
+  { id_media_source: 3, code: 'facebook', label: 'Facebook', sort_order: 3 },
+  { id_media_source: 4, code: 'friends', label: 'Friends', sort_order: 4 },
+];
+
+export function makeDiscoverySummary(
+  overrides: Partial<DiscoverySummary> = {}
+): DiscoverySummary {
+  return {
+    media_sources: [],
+    media_source_ids: [],
+    friends: [],
+    max_friends: 3,
+    friends_selected: false,
+    needs_media: true,
+    needs_friends: false,
+    ...overrides,
+  };
+}
+
+export function makeStudentProofFile(
+  overrides: Partial<PlayerStudentProofFile> = {}
+): PlayerStudentProofFile {
+  const id = overrides.id_player_student_proof_file ?? 31;
+  return {
+    id_player_student_proof_file: id,
+    student_proof_id: 3,
+    sort_order: 0,
+    url: `https://example.com/proof-${id}.png`,
+    inserted_at: 1_700_000_000,
+    updated_at: null,
+    ...overrides,
+  };
+}
+
+export function makeStudentProof(
+  overrides: Partial<PlayerStudentProof> = {}
+): PlayerStudentProof {
+  return {
+    id_player_student_proof: 3,
+    player_id: 9,
+    student_until: '2099-06-30',
+    ready_for_review: false,
+    review_status: 'pending',
+    review_message: null,
+    submitted_at: null,
+    reviewed_at: null,
+    files: [makeStudentProofFile()],
+    inserted_at: 1_700_000_000,
+    updated_at: null,
     ...overrides,
   };
 }

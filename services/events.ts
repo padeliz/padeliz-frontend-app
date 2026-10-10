@@ -59,8 +59,13 @@ export function clearEventCache(): void {
   eventCache.clear();
 }
 
-/** Chip / membership filters for GET /app/events. */
+/** Ordering for GET /app/events (date, then arriving_time). */
+export type EventListSort = "asc" | "desc";
+
+/** Chip / membership filters + explicit sort for GET /app/events. */
 export type EventListFilters = {
+  /** Past tab → "desc"; Ongoing / Upcoming → "asc". */
+  sort?: EventListSort;
   participated?: boolean;
   registered?: boolean;
   unpaid?: boolean;
@@ -86,6 +91,7 @@ function filtersToQuery(
     registered: filters.registered ? 1 : undefined,
     unpaid: filters.unpaid ? 1 : undefined,
     lottery_winner: filters.lottery_winner ? 1 : undefined,
+    sort: filters.sort,
     "club_ids[]":
       filters.club_ids && filters.club_ids.length > 0
         ? filters.club_ids

@@ -17,13 +17,14 @@ const AT_END = new Date('2026-06-15T15:00:00Z');
 function cta(
   status: EventStatus,
   now: Date,
-  opts: { isAuthed?: boolean; approved?: boolean } = {}
+  opts: { isAuthed?: boolean; hasLevel?: boolean; hasParticipated?: boolean } = {}
 ) {
   return getEventStickyCta({
     status,
     event,
-    isEligibilityApproved: opts.approved ?? false,
+    hasPlayerLevel: opts.hasLevel ?? false,
     isAuthed: opts.isAuthed ?? true,
+    hasParticipated: opts.hasParticipated ?? false,
     now,
   });
 }
@@ -42,18 +43,31 @@ describe('eventEndDate', () => {
 
 describe('getEventStickyCta', () => {
   describe('event end', () => {
-    it('hides the CTA at and after eventEnd for every status', () => {
+    it('hides the CTA at and after eventEnd when the player did not participate', () => {
       const statuses: EventStatus[] = [
         'none',
         'pending_payment',
-        'eligibility_pending',
         'registration_pending',
       ];
       for (const status of statuses) {
-        expect(cta(status, AT_END, { approved: true })).toBeNull();
+        expect(cta(status, AT_END, { hasLevel: true })).toBeNull();
         expect(cta(status, new Date('2026-06-16T00:00:00Z'))).toBeNull();
       }
       expect(cta('none', AT_END, { isAuthed: false })).toBeNull();
+    });
+
+    it('shows grey disabled Participated when past and hasParticipated', () => {
+      expect(cta('none', AT_END, { hasParticipated: true })).toEqual({
+        label: 'Participated',
+        variant: 'grey',
+        disabled: true,
+        target: null,
+      });
+      expect(
+        cta('pending_payment', new Date('2026-06-16T00:00:00Z'), {
+          hasParticipated: true,
+        })
+      ).toMatchObject({ label: 'Participated', disabled: true, variant: 'grey' });
     });
 
     it('still shows Pay Now one second before eventEnd (no calendar-day nulling)', () => {
@@ -65,23 +79,23 @@ describe('getEventStickyCta', () => {
       const open = getEventStickyCta({
         status: 'none',
         event: { ...event, registration_allowed_until: Date.parse('2026-06-16T00:00:00Z') / 1000 },
-        isEligibilityApproved: true,
+        hasPlayerLevel: true,
         isAuthed: true,
         now: ongoing,
       });
-      expect(open?.label).toBe('Register Now');
+      expect(open?.label).toBe('Register');
     });
   });
 
   describe('actionable mapping', () => {
-    it('maps Register Now / Check Eligibility / Pay Now / pending', () => {
-      expect(cta('none', BEFORE_REG_CLOSE, { approved: true })).toMatchObject({
-        label: 'Register Now',
+    it('maps Register / Assess my level / Pay Now / pending', () => {
+      expect(cta('none', BEFORE_REG_CLOSE, { hasLevel: true })).toMatchObject({
+        label: 'Register',
         target: { screen: 'registration' },
       });
       expect(cta('none', BEFORE_REG_CLOSE)).toMatchObject({
-        label: 'Check Eligibility',
-        target: { screen: 'eligibility' },
+        label: 'Assess my level',
+        target: { screen: 'assessment' },
       });
       expect(cta('pending_payment', BEFORE_REG_CLOSE)).toMatchObject({
         label: 'Pay Now',
@@ -91,33 +105,37 @@ describe('getEventStickyCta', () => {
         label: 'Registration Review in Pending',
         target: { screen: 'registration', initialStep: '3' },
       });
-      expect(cta('eligibility_pending', BEFORE_REG_CLOSE)).toMatchObject({
-        label: 'Eligibility Check in Pending',
-        target: null,
-      });
+    });
+
+    it('keeps Register for a player with a level (a pending re-assessment never forces Assess)', () => {
+      // The CTA only depends on whether a level exists, never on assessment status.
+      expect(cta('none', BEFORE_REG_CLOSE, { hasLevel: true })?.label).toBe('Register');
+      expect(cta('none', BEFORE_REG_CLOSE, { hasLevel: false })?.label).toBe(
+        'Assess my level'
+      );
     });
 
     it('returns null once registered', () => {
       expect(cta('registered', BEFORE_REG_CLOSE)).toBeNull();
     });
 
-    it('gives guests Check Eligibility', () => {
+    it('gives guests Assess my level', () => {
       expect(
-        cta('none', BEFORE_REG_CLOSE, { isAuthed: false, approved: true })
-      ).toMatchObject({ label: 'Check Eligibility' });
+        cta('none', BEFORE_REG_CLOSE, { isAuthed: false, hasLevel: true })
+      ).toMatchObject({ label: 'Assess my level' });
     });
   });
 
   describe('Registration closed', () => {
-    it('disables Register Now for an authed player', () => {
-      expect(cta('none', AFTER_REG_CLOSE, { approved: true })).toEqual({
+    it('disables Register for an authed player', () => {
+      expect(cta('none', AFTER_REG_CLOSE, { hasLevel: true })).toEqual({
         label: 'Registration closed',
         disabled: true,
         target: null,
       });
     });
 
-    it('disables Check Eligibility for an authed player', () => {
+    it('disables Assess my level for an authed player', () => {
       expect(cta('none', AFTER_REG_CLOSE)).toMatchObject({
         label: 'Registration closed',
         disabled: true,
@@ -125,7 +143,7 @@ describe('getEventStickyCta', () => {
       });
     });
 
-    it('disables Check Eligibility for a guest', () => {
+    it('disables Assess my level for a guest', () => {
       expect(cta('none', AFTER_REG_CLOSE, { isAuthed: false })).toMatchObject({
         label: 'Registration closed',
         disabled: true,
@@ -135,10 +153,10 @@ describe('getEventStickyCta', () => {
 
     it('closes exactly at registration_allowed_until', () => {
       const at = new Date(event.registration_allowed_until * 1000);
-      expect(cta('none', at, { approved: true })?.disabled).toBe(true);
+      expect(cta('none', at, { hasLevel: true })?.disabled).toBe(true);
       expect(
-        cta('none', new Date(at.getTime() - 1000), { approved: true })?.label
-      ).toBe('Register Now');
+        cta('none', new Date(at.getTime() - 1000), { hasLevel: true })?.label
+      ).toBe('Register');
     });
 
     it('keeps Pay Now after registration closed', () => {
@@ -152,9 +170,6 @@ describe('getEventStickyCta', () => {
     it('does not replace pending CTAs', () => {
       expect(cta('registration_pending', AFTER_REG_CLOSE)).toMatchObject({
         label: 'Registration Review in Pending',
-      });
-      expect(cta('eligibility_pending', AFTER_REG_CLOSE)).toMatchObject({
-        label: 'Eligibility Check in Pending',
       });
     });
   });

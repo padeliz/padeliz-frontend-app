@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
@@ -10,7 +10,7 @@ type Props = {
 export default function Warning({text}: Props) {
     return (
         <View style={styles.container}>
-            <FontAwesome name="warning" size={20} color={Colors.YELLOW} />
+            <MaterialCommunityIcons name="alert" size={20} color={Colors.YELLOW} />
             <Text style={styles.text}>{text}</Text>
         </View>
     );

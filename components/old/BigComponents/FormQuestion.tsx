@@ -1,6 +1,6 @@
 import React from "react";
 import { View, ScrollView, Text, StyleSheet } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import FormCheckbox from "../Buttons/FormCheckbox";
 import TextInputBox from "../Misc/TextInputBox";
 import * as Colors from "@/constants/Colors";
@@ -13,7 +13,7 @@ type Props = {
     subtitle: string;
     labels: string[];
     sublabels: string[];
-    icons: React.ComponentProps<typeof FontAwesome>["name"][];
+    icons: React.ComponentProps<typeof MaterialCommunityIcons>["name"][];
 };
 
 export default function FormQuestion({isCheckable, title, subtitle, labels,sublabels, icons}: Props) {

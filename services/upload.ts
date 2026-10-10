@@ -19,8 +19,12 @@ const MIME_BY_EXT: Record<string, string> = {
 
 export type FileMeta = { name?: string; type?: string };
 
-/** Build a `FormData` holding the file at `uri` under the given field name. */
-export async function formDataFromUri(
+/**
+ * Append the file at `uri` to an existing `FormData` under the given field name (use `files[]`
+ * repeatedly to send several files in one multipart request).
+ */
+export async function appendFileFromUri(
+  form: FormData,
   field: string,
   uri: string,
   opts?: FileMeta
@@ -30,7 +34,6 @@ export async function formDataFromUri(
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   const type = opts?.type || MIME_BY_EXT[ext] || "image/jpeg";
 
-  const form = new FormData();
   if (Platform.OS === "web") {
     const blob = await (await fetch(uri)).blob();
     form.append(field, blob, name);
@@ -38,4 +41,13 @@ export async function formDataFromUri(
     form.append(field, { uri, name, type } as unknown as Blob);
   }
   return form;
+}
+
+/** Build a `FormData` holding the file at `uri` under the given field name. */
+export async function formDataFromUri(
+  field: string,
+  uri: string,
+  opts?: FileMeta
+): Promise<FormData> {
+  return appendFileFromUri(new FormData(), field, uri, opts);
 }

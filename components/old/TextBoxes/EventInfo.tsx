@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Button from "@/components/old/Buttons/Button";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
@@ -21,13 +21,13 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
                     <View style={styles.detailsContainer}>
                         <View style={styles.iconTextContainer}>
                             <View style={styles.iconContainer}>
-                                <FontAwesome name="map-marker" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                                <MaterialCommunityIcons name="map-marker" size={ Fonts.BODY } color={ Colors.CREAM } />   
                             </View>
                             <Text style={styles.details}>{ location }</Text>
                         </View>
                         <View style={styles.iconTextContainer}>
                             <View style={styles.iconContainer}>
-                                <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                                <MaterialCommunityIcons name="calendar" size={ Fonts.BODY } color={ Colors.CREAM } />   
                             </View>
                             <Text style={styles.details}>{ date }</Text>
                         </View>
@@ -44,7 +44,7 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
             <View style={[styles.detailsContainer, {backgroundColor: Colors.DARK_GRAY}]}>
                 <View style={styles.iconTextContainer}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                        <MaterialCommunityIcons name="calendar" size={ Fonts.BODY } color={ Colors.CREAM } />   
                     </View>
                     <Text style={styles.details}>{ date }</Text>
                 </View>
@@ -56,13 +56,13 @@ export default function EventInfo({ name, location, date, registered, mini }: Pr
             <View style={styles.detailsContainer}>
                 <View style={styles.iconTextContainer}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome name="map-marker" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                        <MaterialCommunityIcons name="map-marker" size={ Fonts.BODY } color={ Colors.CREAM } />   
                     </View>
                     <Text style={styles.details}>{ location }</Text>
                 </View>
                 <View style={styles.iconTextContainer}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome name="calendar-o" size={ Fonts.BODY } color={ Colors.CREAM } />   
+                        <MaterialCommunityIcons name="calendar" size={ Fonts.BODY } color={ Colors.CREAM } />   
                     </View>
                     <Text style={styles.details}>{ date }</Text>
                 </View>

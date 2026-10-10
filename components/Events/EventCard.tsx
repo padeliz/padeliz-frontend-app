@@ -1,5 +1,5 @@
 import { View, Text, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import { EventCardData, EventBadge } from '@/types/types';
@@ -10,7 +10,6 @@ const CARD_WIDTH = SCREEN_WIDTH - 32;
 const BADGE_COLORS: Record<string, string> = {
   pending_payment: Colors.BLUE,
   registration_pending: Colors.ORANGE,
-  eligibility_pending: Colors.ORANGE,
   registered: Colors.BADGE_GREEN,
   participated: Colors.BADGE_GREEN,
   lottery_winner: Colors.AMBER,
@@ -66,11 +65,11 @@ export default function EventCard({ event, onPress }: Props) {
       <View style={styles.info}>
         <Text style={styles.title}>{event.title}</Text>
         <View style={styles.detailRow}>
-          <FontAwesome name="map-marker" size={16} color={Colors.CREAM} style={styles.icon} />
+          <MaterialCommunityIcons name="map-marker" size={16} color={Colors.CREAM} style={styles.icon} />
           <Text style={styles.detailText}>{event.location}</Text>
         </View>
         <View style={styles.detailRow}>
-          <FontAwesome name="calendar" size={14} color={Colors.CREAM} style={styles.icon} />
+          <MaterialCommunityIcons name="calendar" size={14} color={Colors.CREAM} style={styles.icon} />
           <Text style={styles.detailText}>{event.date}</Text>
         </View>
       </View>

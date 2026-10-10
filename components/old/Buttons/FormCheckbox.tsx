@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
-import Icon from "@expo/vector-icons/FontAwesome";
-import { FontAwesome } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Checkbox from "../Visuals/Checkbox";
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
 type Props = {
-    iconName: React.ComponentProps<typeof FontAwesome>["name"];
+    iconName: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
     label: string; 
 };
 
@@ -20,7 +19,7 @@ export default function FormCheckbox({iconName, label}: Props) {
                 <View style={styles.contentsContainer}>
                     <View style={[styles.contentsContainer, {justifyContent: "flex-start"}]}>
                         <View style={{padding: 5}}>
-                            <Icon name={iconName} size={Fonts.BODY} color={Colors.WHITE} />
+                            <MaterialCommunityIcons name={iconName} size={Fonts.BODY} color={Colors.WHITE} />
                         </View>
                         <Text style={styles.text}>{label}</Text>
                     </View>

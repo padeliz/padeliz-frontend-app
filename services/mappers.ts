@@ -3,7 +3,6 @@
  */
 import type { ImageSourcePropType } from "react-native";
 import type { Event, EventDivision, EventRegistration } from "@/types/api";
-import type { ReviewStatus } from "@/types/api";
 import type {
   DivisionDetails,
   EventCardData,
@@ -206,7 +205,8 @@ export function eventDivisionOptions(e: Event): DivisionDetails[] {
     price: divisionEntryFee(d),
     description: divisionDescription(d),
     num_spots: Number(d.players_limit) || 0,
-    isEligible: true,
+    // Server verdict for the signed-in player; false for guests / no level.
+    isEligible: d.is_eligible === true,
     isActive: true,
     color:
       typeof d.division?.color === "string" ? d.division.color : null,
@@ -223,26 +223,17 @@ function divisionDescription(d: EventDivision): string {
   return `Up to ${Number(d.players_limit) || 0} players`;
 }
 
-/** Map the player's latest eligibility review status to a UI event status. */
-export function reviewStatusToEventStatus(
-  latest: ReviewStatus | null
-): EventStatus {
-  // pending → show "Eligibility Check in Pending"; everything else → can register.
-  return latest === "pending" ? "eligibility_pending" : "none";
-}
-
 /**
  * Aggregate UI status for list/home cards and event CTAs over active registrations:
  * any unpaid with amount due → pending_payment; else any awaiting → registration_pending;
- * else any paid → registered; cancelled/non-active ignored; eligibility fallback.
+ * else any paid → registered; cancelled/non-active ignored.
  */
 export function registrationToEventStatus(
   registration:
     | EventRegistration
     | EventRegistration[]
     | null
-    | undefined,
-  gate?: { isPending: boolean }
+    | undefined
 ): EventStatus {
   const regs = (
     Array.isArray(registration)
@@ -261,7 +252,7 @@ export function registrationToEventStatus(
   if (regs.some((r) => r.payment_status === "paid")) {
     return "registered";
   }
-  return gate?.isPending ? "eligibility_pending" : "none";
+  return "none";
 }
 
 /** Format a unix-epoch payment deadline for unpaid registrations. */

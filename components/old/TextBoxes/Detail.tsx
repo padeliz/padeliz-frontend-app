@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from "@/constants/Colors";
 import * as Fonts from "@/constants/Fonts";
 
@@ -18,7 +18,7 @@ export default function Detail({type, text}: Props) {
                 <Text style={styles.title}>Location</Text>
                 <View style={styles.iconTextContainer}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome name="map-marker" size={Fonts.BODY} color={Colors.WHITE} />   
+                        <MaterialCommunityIcons name="map-marker" size={Fonts.BODY} color={Colors.WHITE} />   
                     </View>
                     <Text style={styles.text}>{text}</Text>
                 </View>
@@ -31,7 +31,7 @@ export default function Detail({type, text}: Props) {
             <Text style={styles.title}>Price per player</Text>
             <View style={styles.iconTextContainer}>
                 <View style={styles.iconContainer}>
-                    <FontAwesome name="tag" size={Fonts.BODY} color={Colors.WHITE} />   
+                    <MaterialCommunityIcons name="tag" size={Fonts.BODY} color={Colors.WHITE} />   
                 </View>
                 <Text style={styles.text}>{text}</Text>
             </View>

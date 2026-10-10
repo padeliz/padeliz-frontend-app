@@ -68,6 +68,24 @@ describe('eventDivisionOptions', () => {
     expect(second.color).toBe('#1565C0');
   });
 
+  it('uses the server is_eligible verdict instead of hardcoding true', () => {
+    const event = makeEvent();
+    event.event_divisions![0].is_eligible = true;
+    event.event_divisions![1].is_eligible = false;
+    const [first, second] = eventDivisionOptions(event);
+    expect(first.isEligible).toBe(true);
+    expect(second.isEligible).toBe(false);
+  });
+
+  it('treats a missing / null is_eligible (guests, no level) as not eligible', () => {
+    const event = makeEvent();
+    event.event_divisions![0].is_eligible = null;
+    delete event.event_divisions![1].is_eligible;
+    const [first, second] = eventDivisionOptions(event);
+    expect(first.isEligible).toBe(false);
+    expect(second.isEligible).toBe(false);
+  });
+
   it('falls back to the division name when no per-event title is set', () => {
     const event = makeEvent({
       event_divisions: [
@@ -232,16 +250,13 @@ describe('registrationToEventStatus', () => {
     expect(registrationToEventStatus([paid, awaiting])).toBe('registration_pending');
   });
 
-  it('ignores cancelled registrations and falls back to eligibility', () => {
+  it('ignores cancelled registrations', () => {
     const cancelled = makeRegistration({
       lifecycle_status: 'cancelled',
       payment_status: 'unpaid',
     });
 
-    expect(registrationToEventStatus(cancelled, { isPending: true })).toBe(
-      'eligibility_pending'
-    );
-    expect(registrationToEventStatus(cancelled, { isPending: false })).toBe('none');
+    expect(registrationToEventStatus(cancelled)).toBe('none');
   });
 
   it('does not treat refund_* as registered', () => {
@@ -251,7 +266,7 @@ describe('registrationToEventStatus', () => {
     expect(registrationToEventStatus(makeRegistrationWithStatus('refunded'))).toBe('none');
   });
 
-  it('defaults to none without a registration or pending eligibility', () => {
+  it('defaults to none without a registration', () => {
     expect(registrationToEventStatus(null)).toBe('none');
   });
 });

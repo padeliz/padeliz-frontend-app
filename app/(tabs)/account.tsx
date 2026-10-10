@@ -11,13 +11,14 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import { useAuth } from '@/context/auth';
 import Button from '@/components/Buttons/Button';
+import LevelBandScale from '@/components/Level/LevelBandScale';
 import LoginOptions from '@/components/Login/LoginOptions';
 import ScreenHeader from '@/components/Navigation/ScreenHeader';
 import { fetchEventHistory } from '@/services/eventHistory';
@@ -26,12 +27,16 @@ import { ApiError } from '@/services/apiError';
 import { identityListLabel } from '@/services/playerMapping';
 import {
   useIdentities,
+  useSetAvatarPrimaryMutation,
   useUnlinkIdentityMutation,
 } from '@/services/hooks/useIdentities';
 import { queryKeys } from '@/lib/queryClient';
 import { formatDateHuman } from '@/services/mappers';
-import { eventDetailPath } from '@/utils/eventPaths';
-import type { EventHistoryItem, PlayerIdentity } from '@/types/api';
+import { useCurrentLevel } from '@/services/hooks/useLevelAssessment';
+import { useLevels } from '@/services/hooks/useLevels';
+import { useLevelFlow } from '@/services/hooks/useLevelFlow';
+import { eventDetailPath, studentProofPath } from '@/utils/eventPaths';
+import type { EventHistoryItem, Level, PlayerIdentity, PlayerLevel } from '@/types/api';
 
 function InfoCard({
   label,
@@ -48,7 +53,7 @@ function InfoCard({
       <Text style={styles.infoValue}>{value}</Text>
       {showLock && (
         <View style={styles.lockIconAbsolute}>
-          <FontAwesome name="lock" size={20} color={Colors.CREAM_60} />
+          <MaterialCommunityIcons name="lock" size={20} color={Colors.CREAM_60} />
         </View>
       )}
     </View>
@@ -73,6 +78,10 @@ function IdentityDetailsModal({
   unlinkBusy,
   canUnlink,
   unlinkError,
+  canUseAsAvatar,
+  onUseAsAvatar,
+  avatarBusy,
+  avatarError,
 }: {
   identity: PlayerIdentity | null;
   visible: boolean;
@@ -81,11 +90,16 @@ function IdentityDetailsModal({
   unlinkBusy: boolean;
   canUnlink: boolean;
   unlinkError?: string | null;
+  canUseAsAvatar: boolean;
+  onUseAsAvatar: () => void;
+  avatarBusy: boolean;
+  avatarError?: string | null;
 }) {
   if (!identity) return null;
 
+  const busy = unlinkBusy || avatarBusy;
   const dismiss = () => {
-    if (unlinkBusy) return;
+    if (busy) return;
     onClose();
   };
 
@@ -110,6 +124,12 @@ function IdentityDetailsModal({
             <Text style={styles.modalLabel}>Linked </Text>
             {formatLinkedAt(identity.linked_at)}
           </Text>
+          {identity.is_avatar_primary ? (
+            <View style={styles.primaryBadge} testID="identity-primary-avatar">
+              <MaterialCommunityIcons name="check-circle" size={14} color={Colors.BLUE} />
+              <Text style={styles.primaryBadgeText}>Primary avatar</Text>
+            </View>
+          ) : null}
 
           {unlinkError ? (
             <Text style={styles.unlinkError} testID="identity-unlink-error">
@@ -117,22 +137,94 @@ function IdentityDetailsModal({
             </Text>
           ) : null}
 
+          {avatarError ? (
+            <Text style={styles.unlinkError} testID="identity-avatar-error">
+              {avatarError}
+            </Text>
+          ) : null}
+
           <View style={styles.modalActions}>
+            {canUseAsAvatar ? (
+              <Button
+                label="Use as avatar"
+                onPress={onUseAsAvatar}
+                loading={avatarBusy}
+                disabled={busy && !avatarBusy}
+                testID="identity-use-as-avatar"
+              />
+            ) : null}
             {canUnlink ? (
               <Button
-                label={unlinkBusy ? 'Unlinking…' : 'Unlink'}
+                label="Unlink"
                 onPress={onUnlink}
-                disabled={unlinkBusy}
+                loading={unlinkBusy}
+                disabled={busy && !unlinkBusy}
                 style={styles.unlinkButton}
                 labelStyle={styles.unlinkButtonLabel}
+                testID="identity-unlink"
               />
             ) : null}
             <Button
               label="Close"
               onPress={dismiss}
-              disabled={unlinkBusy}
+              disabled={busy}
               style={styles.modalCloseButton}
               labelStyle={styles.modalCloseLabel}
+            />
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function LevelModal({
+  level,
+  levels,
+  visible,
+  starting,
+  error,
+  onClose,
+  onUpdate,
+}: {
+  level: PlayerLevel;
+  levels: Level[] | null;
+  visible: boolean;
+  starting: boolean;
+  error?: string | null;
+  /** Dismiss (Close / backdrop / back). Aborts a pending start without navigating. */
+  onClose: () => void;
+  onUpdate: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.modalBackdrop} onPress={onClose} testID="level-modal-backdrop">
+        <Pressable style={styles.modalCard} onPress={() => undefined} testID="level-modal">
+          <Text style={styles.levelModalBand} testID="level-modal-band">
+            {level.band_name ?? 'Your level'}
+          </Text>
+          <LevelBandScale bandName={level.band_name} level={level.level} levels={levels} />
+          <Text style={styles.levelModalNumber} testID="level-modal-level">
+            Level {level.level}
+          </Text>
+          {error ? (
+            <Text style={styles.unlinkError} testID="level-modal-error">
+              {error}
+            </Text>
+          ) : null}
+          <View style={styles.modalActions}>
+            <Button
+              label="Update level assessment"
+              onPress={onUpdate}
+              loading={starting}
+              testID="level-modal-update"
+            />
+            <Button
+              label="Close"
+              onPress={onClose}
+              style={styles.modalCloseButton}
+              labelStyle={styles.modalCloseLabel}
+              testID="level-modal-close"
             />
           </View>
         </Pressable>
@@ -179,7 +271,7 @@ function unlinkErrorAlert(err: unknown) {
 }
 
 function ProfileAccountBody() {
-  const { user, signOut, obtainGoogleIdToken, linkGoogleIdentity } = useAuth();
+  const { user, signOut, obtainGoogleIdToken, linkGoogleIdentity, refreshMe } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const viewer = user ? String(user.id) : 'guest';
@@ -189,12 +281,24 @@ function ProfileAccountBody() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [selectedIdentity, setSelectedIdentity] = useState<PlayerIdentity | null>(null);
   const [unlinkError, setUnlinkError] = useState<string | null>(null);
+  const [avatarPickError, setAvatarPickError] = useState<string | null>(null);
   const [linkBusy, setLinkBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
+  const [levelModalOpen, setLevelModalOpen] = useState(false);
+
+  const { data: currentLevel } = useCurrentLevel();
+  const { data: levels } = useLevels(levelModalOpen);
+  const {
+    start: startLevelFlow,
+    cancel: cancelLevelFlow,
+    starting: levelStarting,
+    error: levelFlowError,
+  } = useLevelFlow();
 
   const { data: identities, loading: identitiesLoading, refetch: refetchIdentities } =
     useIdentities();
   const unlinkMutation = useUnlinkIdentityMutation();
+  const avatarPrimaryMutation = useSetAvatarPrimaryMutation();
 
   const googleIdentities = useMemo(
     () => (identities ?? []).filter((i) => i.provider === 'google'),
@@ -221,6 +325,21 @@ function ProfileAccountBody() {
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
+
+  // A new picture (e.g. after "Use as avatar") must get a fresh chance to load.
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.picture]);
+
+  const closeLevelModal = () => {
+    cancelLevelFlow();
+    setLevelModalOpen(false);
+  };
+
+  const handleUpdateLevel = async () => {
+    const navigated = await startLevelFlow('assessment');
+    if (navigated) setLevelModalOpen(false);
+  };
 
   const handleLinkAnother = async () => {
     setLinkBusy(true);
@@ -261,6 +380,29 @@ function ProfileAccountBody() {
     }
   };
 
+  const canUseSelectedAsAvatar =
+    selectedIdentity != null &&
+    selectedIdentity.provider === 'google' &&
+    !!selectedIdentity.avatar_url &&
+    !selectedIdentity.is_avatar_primary;
+
+  const handleUseAsAvatar = async () => {
+    if (!selectedIdentity || !canUseSelectedAsAvatar) return;
+
+    setAvatarPickError(null);
+    try {
+      await avatarPrimaryMutation.mutateAsync(selectedIdentity.id_identity);
+      // Refresh the player so `user.picture` reflects the new primary avatar.
+      await refreshMe();
+      setAvatarError(false);
+      setSelectedIdentity(null);
+    } catch (e) {
+      setAvatarPickError(
+        e instanceof ApiError ? e.message : 'Something went wrong. Please try again.'
+      );
+    }
+  };
+
   const handleSignOut = async () => {
     const confirmed = await confirmAsync(
       'Sign out',
@@ -288,11 +430,11 @@ function ProfileAccountBody() {
             />
           ) : (
             <View style={[styles.avatar, styles.avatarFallback]}>
-              <FontAwesome name="user" size={36} color={Colors.CREAM_60} />
+              <MaterialCommunityIcons name="account" size={36} color={Colors.CREAM_60} />
             </View>
           )}
           <View style={styles.avatarLock} testID="account-avatar-lock">
-            <FontAwesome name="lock" size={14} color={Colors.CREAM_60} />
+            <MaterialCommunityIcons name="lock" size={14} color={Colors.CREAM_60} />
           </View>
         </View>
         <View style={styles.nicknameContainer}>
@@ -301,23 +443,66 @@ function ProfileAccountBody() {
         </View>
       </View>
 
+      <View style={styles.levelSection}>
+        {currentLevel ? (
+          <Pressable
+            style={styles.levelPill}
+            onPress={() => setLevelModalOpen(true)}
+            testID="account-level-band"
+          >
+            <Text style={styles.levelPillText}>
+              {currentLevel.band_name ?? `Level ${currentLevel.level}`}
+            </Text>
+            <MaterialCommunityIcons name="chevron-right" size={12} color={Colors.CREAM_60} />
+          </Pressable>
+        ) : (
+          <Button
+            label="Assess my level"
+            onPress={() => void startLevelFlow('assessment')}
+            loading={levelStarting}
+            testID="account-assess-level"
+          />
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Student Status</Text>
+        <Button
+          label="Submit student proof"
+          style={styles.linkButton}
+          labelStyle={styles.linkButtonLabel}
+          onPress={() => router.push(studentProofPath() as any)}
+          testID="account-student-proof"
+        />
+      </View>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Linked Google Accounts</Text>
 
         {identitiesLoading ? (
-          <ActivityIndicator color={Colors.BLUE} />
+          <ActivityIndicator color={Colors.BLUE} style={styles.identitiesBody} />
         ) : googleIdentities.length === 0 ? (
-          <Text style={styles.emptyIdentities} testID="google-identities-empty">
+          <Text
+            style={[styles.emptyIdentities, styles.identitiesBody]}
+            testID="google-identities-empty"
+          >
             No Google accounts linked yet.
           </Text>
         ) : (
-          <View style={styles.identityList} testID="google-identities-list">
+          <View
+            style={[styles.identityList, styles.identitiesBody]}
+            testID="google-identities-list"
+          >
             {googleIdentities.map((identity) => (
               <Pressable
                 key={identity.id_identity}
                 style={styles.accountCard}
                 testID={`google-identity-${identity.id_identity}`}
-                onPress={() => setSelectedIdentity(identity)}
+                onPress={() => {
+                  setUnlinkError(null);
+                  setAvatarPickError(null);
+                  setSelectedIdentity(identity);
+                }}
               >
                 <Image
                   source={require('@/assets/images/google-icon.png')}
@@ -327,8 +512,16 @@ function ProfileAccountBody() {
                   <Text style={styles.accountEmail} numberOfLines={1}>
                     {identityListLabel(identity)}
                   </Text>
+                  {identity.is_avatar_primary ? (
+                    <View
+                      style={styles.primaryBadge}
+                      testID={`google-identity-primary-${identity.id_identity}`}
+                    >
+                      <Text style={styles.primaryBadgeText}>Primary avatar</Text>
+                    </View>
+                  ) : null}
                 </View>
-                <FontAwesome name="chevron-right" size={14} color={Colors.CREAM_60} />
+                <MaterialCommunityIcons name="chevron-right" size={14} color={Colors.CREAM_60} />
               </Pressable>
             ))}
           </View>
@@ -336,16 +529,14 @@ function ProfileAccountBody() {
 
         <Button
           label="Link Another Account"
-          icon={<FontAwesome name="plus" size={14} color={Colors.BLUE} />}
+          icon={<MaterialCommunityIcons name="plus" size={14} color={Colors.BLUE} />}
           style={styles.linkButton}
           labelStyle={styles.linkButtonLabel}
           onPress={() => void handleLinkAnother()}
-          disabled={linkBusy}
+          loading={linkBusy}
+          loadingColor={Colors.BLUE}
           testID="link-google-account"
         />
-        {linkBusy ? (
-          <ActivityIndicator color={Colors.BLUE} style={{ marginTop: 8 }} />
-        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -359,7 +550,7 @@ function ProfileAccountBody() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Event History</Text>
+        <Text style={styles.sectionTitle}>My Participations</Text>
 
         {historyLoading ? (
           <ActivityIndicator color={Colors.BLUE} style={{ marginTop: 16 }} />
@@ -407,23 +598,40 @@ function ProfileAccountBody() {
           <ActivityIndicator color={Colors.RED} />
         ) : (
           <>
-            <FontAwesome name="sign-out" size={16} color={Colors.RED} />
+            <MaterialCommunityIcons name="logout" size={16} color={Colors.RED} />
             <Text style={styles.signOutLabel}>Sign Out</Text>
           </>
         )}
       </Pressable>
+
+      {currentLevel ? (
+        <LevelModal
+          level={currentLevel}
+          levels={levels}
+          visible={levelModalOpen}
+          starting={levelStarting}
+          error={levelFlowError ? 'Could not continue. Please try again.' : null}
+          onClose={closeLevelModal}
+          onUpdate={() => void handleUpdateLevel()}
+        />
+      ) : null}
 
       <IdentityDetailsModal
         identity={selectedIdentity}
         visible={selectedIdentity !== null}
         onClose={() => {
           setUnlinkError(null);
+          setAvatarPickError(null);
           setSelectedIdentity(null);
         }}
         onUnlink={() => void handleUnlink()}
         unlinkBusy={unlinkMutation.isPending}
         canUnlink={canUnlinkSelected}
         unlinkError={unlinkError}
+        canUseAsAvatar={canUseSelectedAsAvatar}
+        onUseAsAvatar={() => void handleUseAsAvatar()}
+        avatarBusy={avatarPrimaryMutation.isPending}
+        avatarError={avatarPickError}
       />
     </ScrollView>
   );
@@ -535,6 +743,37 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  levelSection: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+  },
+  levelPill: {
+    minHeight: 44,
+    backgroundColor: Colors.GRAY,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  levelPillText: {
+    fontFamily: Fonts.FONT_MEDIUM,
+    fontSize: Fonts.BODY,
+    color: Colors.WHITE,
+  },
+  levelModalBand: {
+    fontFamily: Fonts.FONT_MEDIUM,
+    fontSize: Fonts.HEADING_2,
+    color: Colors.WHITE,
+    textAlign: 'center',
+  },
+  levelModalNumber: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY,
+    color: Colors.CREAM_60,
+    textAlign: 'center',
+    marginTop: 8,
+  },
   section: {
     marginTop: 32,
     paddingHorizontal: 16,
@@ -551,8 +790,24 @@ const styles = StyleSheet.create({
     color: Colors.WHITE,
   },
 
+  // Same title -> content gap as Personal Information (`infoCards`).
+  identitiesBody: {
+    marginTop: 16,
+  },
   identityList: {
     gap: 12,
+  },
+  primaryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 4,
+  },
+  primaryBadgeText: {
+    fontFamily: Fonts.FONT_REGULAR,
+    fontSize: Fonts.BODY_XS,
+    color: Colors.BLUE,
   },
   accountCard: {
     minHeight: 76,

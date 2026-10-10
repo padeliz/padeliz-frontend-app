@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import Icon from "@expo/vector-icons/FontAwesome";
+import Icon from "@expo/vector-icons/MaterialCommunityIcons";
 import * as Colors from "@/constants/Colors";
 
 type Props = {

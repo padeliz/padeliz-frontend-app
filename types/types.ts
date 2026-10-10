@@ -34,7 +34,7 @@ export type EventDetails = {
     slug?: string | null;
 };
 
-export type EventStatus = 'pending_payment' | 'registered' | 'none' | 'eligibility_pending' | 'registration_pending';
+export type EventStatus = 'pending_payment' | 'registered' | 'none' | 'registration_pending';
 export type EventTiming = 'upcoming' | 'ongoing' | 'past';
 
 export type EventBadge = {

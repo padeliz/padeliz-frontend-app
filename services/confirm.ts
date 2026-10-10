@@ -16,3 +16,30 @@ export function confirmAsync(title: string, message: string): Promise<boolean> {
     ]);
   });
 }
+
+/** Dirty top-left back: discard, save, or stay. */
+export type DirtyLeaveChoice = "discard" | "save" | "stay";
+
+export function confirmDirtyLeaveAsync(
+  title = "Unsaved changes",
+  message = "You have unsaved changes on this step."
+): Promise<DirtyLeaveChoice> {
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      {
+        text: "Leave without saving",
+        style: "destructive",
+        onPress: () => resolve("discard"),
+      },
+      {
+        text: "Save & leave",
+        onPress: () => resolve("save"),
+      },
+      {
+        text: "Continue editing",
+        style: "cancel",
+        onPress: () => resolve("stay"),
+      },
+    ]);
+  });
+}

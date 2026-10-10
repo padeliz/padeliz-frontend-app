@@ -187,7 +187,7 @@ describe('ShareReferralModal tabs', () => {
     fireEvent.changeText(screen.getByTestId('invitee-email-0'), 'a@b.com');
     fireEvent.press(screen.getByTestId('create-referral-code'));
 
-    await waitFor(() => expect(screen.getByText('Creating…')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('create-referral-code-loading')).toBeTruthy());
     fireEvent.press(screen.getByTestId('close-share-referral'));
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByTestId('close-share-referral')).toBeDisabled();

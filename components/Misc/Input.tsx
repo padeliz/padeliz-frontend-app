@@ -1,5 +1,5 @@
 import { TextInput, View, StyleSheet, StyleProp, ViewStyle, TextInputProps } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 
@@ -7,7 +7,7 @@ type Props = {
   placeholder?: string;
   value: string;
   onChangeText: (text: string) => void;
-  icon?: React.ComponentProps<typeof FontAwesome>['name'];
+  icon?: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
   secureTextEntry?: boolean;
   keyboardType?: TextInputProps['keyboardType'];
   style?: StyleProp<ViewStyle>;
@@ -34,7 +34,7 @@ export default function Input({
         keyboardType={keyboardType}
       />
       {icon && (
-        <FontAwesome name={icon} size={16} color={Colors.INACTIVE} style={styles.icon} />
+        <MaterialCommunityIcons name={icon} size={16} color={Colors.INACTIVE} style={styles.icon} />
       )}
     </View>
   );
