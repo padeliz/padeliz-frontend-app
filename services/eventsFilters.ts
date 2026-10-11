@@ -55,7 +55,7 @@ export function initialFiltersByTab(
   };
 }
 
-/** Past → newest first (date DESC, arriving_time DESC); Ongoing/Upcoming → ASC. */
+/** Past → newest first (event_starts_at DESC); Ongoing/Upcoming → ASC. */
 export function eventSortForTab(tab: EventTiming): EventListSort {
   return tab === "past" ? "desc" : "asc";
 }

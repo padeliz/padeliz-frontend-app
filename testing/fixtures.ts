@@ -14,12 +14,24 @@ import type {
   PlayerPhone,
   RegistrationPaymentStatus,
 } from '@/types/api';
+import { productDateTimeToDate } from '@/services/dateRange';
 
 export const EDITION_ID = 42;
 export const DIVISION_ID = 7;
 
 /** Far enough in the future that `classifyTiming` reports "upcoming". */
 const FUTURE_DATE = '2099-06-15';
+
+function unixOn(ymd: string, time: string): number {
+  return Math.floor(productDateTimeToDate(ymd, time).getTime() / 1000);
+}
+
+const FUTURE_STARTS = unixOn(FUTURE_DATE, '10:30:00');
+const FUTURE_ENDS = unixOn(FUTURE_DATE, '18:00:00');
+const PLAY_1_START = unixOn(FUTURE_DATE, '11:00:00');
+const PLAY_1_END = unixOn(FUTURE_DATE, '14:00:00');
+const PLAY_2_START = unixOn(FUTURE_DATE, '14:30:00');
+const PLAY_2_END = unixOn(FUTURE_DATE, '18:00:00');
 
 export function makeEvent(overrides: Partial<Event> = {}): Event {
   return {
@@ -30,9 +42,17 @@ export function makeEvent(overrides: Partial<Event> = {}): Event {
     slug: 'tour-org-minitour-21',
     description: '<p>Join us for a day of padel.</p>',
     cover_url: 'https://example.com/cover.png',
-    date: FUTURE_DATE,
-    arriving_time: '10:30:00',
-    closing_time: '18:00:00',
+    cover_images: [
+      {
+        id: 1,
+        url: 'https://example.com/cover.png',
+        aspect_ratio: 1.5,
+        sort_order: 0,
+      },
+    ],
+    event_starts_at: FUTURE_STARTS,
+    event_ends_at: FUTURE_ENDS,
+    event_nr_of_days: 1,
     registration_allowed_until: Math.floor(Date.now() / 1000) + 86_400,
     cancellation_allowed_until: Math.floor(Date.now() / 1000) + 86_400,
     inserted_at: 1_700_000_000,
@@ -58,8 +78,9 @@ export function makeEvent(overrides: Partial<Event> = {}): Event {
         division_title: 'Students Rookies',
         players_limit: 12,
         entry_fee: 45,
-        playing_start_time: '11:00:00',
-        playing_end_time: '14:00:00',
+        check_in_at: FUTURE_STARTS,
+        playing_starts_at: PLAY_1_START,
+        playing_ends_at: PLAY_1_END,
         is_eligible: true,
         division: {
           id_division: 2,
@@ -74,8 +95,9 @@ export function makeEvent(overrides: Partial<Event> = {}): Event {
         division_title: 'Intermediate',
         players_limit: 16,
         entry_fee: 60,
-        playing_start_time: '14:30:00',
-        playing_end_time: '18:00:00',
+        check_in_at: FUTURE_STARTS,
+        playing_starts_at: PLAY_2_START,
+        playing_ends_at: PLAY_2_END,
         is_eligible: true,
         division: {
           id_division: 3,
@@ -94,7 +116,7 @@ export function makeRegistration(
   return {
     id_registration: 501,
     event_id: EDITION_ID,
-    player_id: 9,
+    player_user_id: 9,
     event_division_id: DIVISION_ID,
     checkout_id: 901,
     is_minor: false,
@@ -132,7 +154,7 @@ export function makeRegistrationWithStatus(
 export function makePlayerLevel(overrides: Partial<PlayerLevel> = {}): PlayerLevel {
   return {
     id_player_level: 1,
-    player_id: 9,
+    player_user_id: 9,
     level: '3.25',
     band_name: 'Intermediate',
     player_level_assessment_id: 5,
@@ -148,7 +170,7 @@ export function makeAssessment(
 ): PlayerLevelAssessment {
   return {
     id_player_level_assessment: 5,
-    player_id: 9,
+    player_user_id: 9,
     player_custom_field_submission_id: 77,
     submitted_at: null,
     resubmitted_at: null,
@@ -207,7 +229,7 @@ export function makeStudentProof(
 ): PlayerStudentProof {
   return {
     id_player_student_proof: 3,
-    player_id: 9,
+    player_user_id: 9,
     student_until: '2099-06-30',
     ready_for_review: false,
     review_status: 'pending',
@@ -230,7 +252,7 @@ export function makePlayerEmail(
   overrides: Partial<PlayerEmail> = {}
 ): PlayerEmail {
   return {
-    id_player_email: 1,
+    id_user_email: 1,
     email: 'ana@example.com',
     purposes: ['contact', 'login'],
     is_primary: true,
@@ -243,7 +265,7 @@ export function makePlayerPhone(
   overrides: Partial<PlayerPhone> = {}
 ): PlayerPhone {
   return {
-    id_player_phone: 1,
+    id_user_phone: 1,
     phone: '0700000000',
     purposes: ['contact'],
     is_primary: true,
@@ -256,7 +278,7 @@ export function makeGoogleIdentity(
   overrides: Partial<PlayerIdentity> = {}
 ): PlayerIdentity {
   return {
-    id_identity: 10,
+    id_user_identity: 10,
     provider: 'google',
     email: 'google@example.com',
     display_name: 'Google User',
@@ -269,7 +291,7 @@ export function makeGoogleIdentity(
 
 export function makePlayer(overrides: Partial<Player> = {}): Player {
   return {
-    id_player: 9,
+    id_user: 9,
     name: 'Ana Pop',
     skill_division: null,
     first_name: 'Ana',

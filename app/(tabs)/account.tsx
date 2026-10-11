@@ -275,7 +275,7 @@ function ProfileAccountBody() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const viewer = user ? String(user.id) : 'guest';
-  const player = user?.player;
+  const player = user?.user;
   const [avatarError, setAvatarError] = useState(false);
   const [history, setHistory] = useState<EventHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -306,7 +306,7 @@ function ProfileAccountBody() {
   );
 
   const nickname = user?.name ?? 'Player';
-  const userId = player ? `#${String(player.id_player).padStart(5, '0')}` : '—';
+  const userId = player ? `#${String(player.id_user).padStart(5, '0')}` : '—';
   const emailDisplay = user?.email?.trim() ? user.email : 'Not set';
   const phoneDisplay = user?.phone?.trim() ? user.phone : 'Not set';
 
@@ -369,7 +369,7 @@ function ProfileAccountBody() {
 
     setUnlinkError(null);
     try {
-      await unlinkMutation.mutateAsync(selectedIdentity.id_identity);
+      await unlinkMutation.mutateAsync(selectedIdentity.id_user_identity);
       setSelectedIdentity(null);
       void queryClient.invalidateQueries({ queryKey: queryKeys.identities.all(viewer) });
     } catch (e) {
@@ -391,7 +391,7 @@ function ProfileAccountBody() {
 
     setAvatarPickError(null);
     try {
-      await avatarPrimaryMutation.mutateAsync(selectedIdentity.id_identity);
+      await avatarPrimaryMutation.mutateAsync(selectedIdentity.id_user_identity);
       // Refresh the player so `user.picture` reflects the new primary avatar.
       await refreshMe();
       setAvatarError(false);
@@ -495,9 +495,9 @@ function ProfileAccountBody() {
           >
             {googleIdentities.map((identity) => (
               <Pressable
-                key={identity.id_identity}
+                key={identity.id_user_identity}
                 style={styles.accountCard}
-                testID={`google-identity-${identity.id_identity}`}
+                testID={`google-identity-${identity.id_user_identity}`}
                 onPress={() => {
                   setUnlinkError(null);
                   setAvatarPickError(null);
@@ -515,7 +515,7 @@ function ProfileAccountBody() {
                   {identity.is_avatar_primary ? (
                     <View
                       style={styles.primaryBadge}
-                      testID={`google-identity-primary-${identity.id_identity}`}
+                      testID={`google-identity-primary-${identity.id_user_identity}`}
                     >
                       <Text style={styles.primaryBadgeText}>Primary avatar</Text>
                     </View>
@@ -858,10 +858,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.25)',
     elevation: 10,
     borderWidth: 1,
     borderColor: '#d9d9d9',

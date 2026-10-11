@@ -49,17 +49,17 @@ describe('playerMapping', () => {
   it('without avatar_url picks the primary Google identity, else the latest linked', () => {
     const identities = [
       makeGoogleIdentity({
-        id_identity: 1,
+        id_user_identity: 1,
         linked_at: 100,
         avatar_url: 'https://example.com/first.png',
       }),
       makeGoogleIdentity({
-        id_identity: 2,
+        id_user_identity: 2,
         linked_at: 200,
         avatar_url: 'https://example.com/second.png',
       }),
     ];
-    expect(sortedGoogleIdentities(makePlayer({ identities })).map((i) => i.id_identity)).toEqual([
+    expect(sortedGoogleIdentities(makePlayer({ identities })).map((i) => i.id_user_identity)).toEqual([
       1, 2,
     ]);
     expect(playerAvatarUrl(makePlayer({ avatar_url: null, identities }))).toBe(

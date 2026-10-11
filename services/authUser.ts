@@ -18,7 +18,7 @@ export type AppUser = {
 
 export function mapPlayerToUser(p: Player): AppUser {
   return {
-    id: String(p.id_player),
+    id: String(p.id_user),
     email: primaryPlayerEmail(p),
     phone: primaryPlayerPhone(p),
     name: playerDisplayName(p),

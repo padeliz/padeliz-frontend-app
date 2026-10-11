@@ -1,13 +1,10 @@
 /**
- * Expo push token registration.
+ * Expo push token registration (native).
  *
  * The backend fans out registration/payment status notifications through
  * `pm_player_device_tokens`, so the app posts its Expo push token after every
  * successful login (and session restore) and deletes it on sign-out — while the
  * bearer token is still valid, otherwise the DELETE would 401.
- *
- * Push is native-only: on web `getExpoPushTokenAsync` has no credentials to use, so
- * the whole flow is skipped.
  */
 import { Platform } from "react-native";
 import Constants from "expo-constants";
@@ -48,7 +45,6 @@ async function resolveExpoPushToken(): Promise<string | null> {
  * throws: a failed registration must not block signing in.
  */
 export async function syncPushToken(): Promise<string | null> {
-  if (Platform.OS === "web") return null;
   try {
     const token = await resolveExpoPushToken();
     if (!token) return null;

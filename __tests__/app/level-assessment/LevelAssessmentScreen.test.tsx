@@ -97,7 +97,10 @@ function renderScreen() {
 async function renderDraft(assessment: PlayerLevelAssessment = makeAssessment()) {
   mockLoad.mockResolvedValue(assessment);
   renderScreen();
-  await screen.findByTestId('assessment-wizard');
+  await waitFor(() => {
+    expect(mockLoad).toHaveBeenCalled();
+    expect(screen.getByTestId('step-racket-experience')).toBeTruthy();
+  });
 }
 
 beforeEach(() => {
@@ -110,6 +113,7 @@ beforeEach(() => {
   mockDeletePending = false;
   mockDeleteVariables = undefined;
   mockLoadPending = false;
+  mockLoad.mockResolvedValue(makeAssessment());
   mockSave.mockImplementation(async () => makeAssessment());
   mockReady.mockImplementation(async () => makeAssessment({ ready_for_review: true }));
   mockCreate.mockImplementation(async () => makeAssessment());

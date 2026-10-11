@@ -2,15 +2,20 @@
  * Translate backend resources (types/api.ts) into the UI types (types/types.ts).
  */
 import type { ImageSourcePropType } from "react-native";
-import type { Event, EventDivision, EventRegistration } from "@/types/api";
+import type { Event, EventCoverImage, EventDivision, EventRegistration } from "@/types/api";
 import type {
   DivisionDetails,
   EventCardData,
   EventDetails,
   EventStatus,
+  ScheduleGroup,
   ScheduleItem,
 } from "@/types/types";
-import { classifyTiming } from "@/services/dateRange";
+import {
+  classifyTiming,
+  dayYmdFromUnix,
+  formatHiFromUnix,
+} from "@/services/dateRange";
 
 const MONTHS = [
   "January",
@@ -42,25 +47,6 @@ const MONTHS_SHORT = [
   "Dec",
 ];
 
-function uriSource(url: string | null | undefined): ImageSourcePropType | null {
-  if (!url) return null;
-  return { uri: url };
-}
-
-/** "2025-04-27" -> "27 April 2025". Falls back to the raw string if unparseable. */
-export function formatDateHuman(date: string): string {
-  const [y, m, d] = date.split("-").map((n) => Number(n));
-  if (!y || !m || !d || m < 1 || m > 12) return date;
-  return `${d} ${MONTHS[m - 1]} ${y}`;
-}
-
-/** "2026-10-24" -> "24 Oct 2026". Falls back to the raw string if unparseable. */
-export function formatDateShort(date: string): string {
-  const [y, m, d] = date.split("-").map((n) => Number(n));
-  if (!y || !m || !d || m < 1 || m > 12) return date;
-  return `${d} ${MONTHS_SHORT[m - 1]} ${y}`;
-}
-
 const WEEKDAYS = [
   "Sunday",
   "Monday",
@@ -71,25 +57,71 @@ const WEEKDAYS = [
   "Saturday",
 ] as const;
 
-/** Weekday for "YYYY-MM-DD" in local calendar interpretation. */
+function uriSource(url: string | null | undefined): ImageSourcePropType | null {
+  if (!url) return null;
+  return { uri: url };
+}
+
+function partsFromYmd(ymd: string): { y: number; m: number; d: number } | null {
+  const [y, m, d] = ymd.split("-").map((n) => Number(n));
+  if (!y || !m || !d || m < 1 || m > 12) return null;
+  return { y, m, d };
+}
+
+/** "2025-04-27" -> "27 April 2025". */
+export function formatDateHuman(date: string): string {
+  const p = partsFromYmd(date);
+  if (!p) return date;
+  return `${p.d} ${MONTHS[p.m - 1]} ${p.y}`;
+}
+
+/** "2026-10-24" -> "24 Oct 2026". */
+export function formatDateShort(date: string): string {
+  const p = partsFromYmd(date);
+  if (!p) return date;
+  return `${p.d} ${MONTHS_SHORT[p.m - 1]} ${p.y}`;
+}
+
 export function formatWeekday(date: string): string {
-  const [y, m, d] = date.split("-").map((n) => Number(n));
-  if (!y || !m || !d || m < 1 || m > 12) return "";
-  const dt = new Date(y, m - 1, d);
+  const p = partsFromYmd(date);
+  if (!p) return "";
+  const dt = new Date(p.y, p.m - 1, p.d);
   return WEEKDAYS[dt.getDay()] ?? "";
 }
 
-/** "11:30:00" -> "11:30". */
-export function hhmm(time: string | null | undefined): string {
-  if (!time) return "";
-  return time.slice(0, 5);
+/** Compact multi-day range (Bucharest Ymd strings). */
+export function formatCompactDateRange(startYmd: string, endYmd: string): string {
+  const a = partsFromYmd(startYmd);
+  const b = partsFromYmd(endYmd);
+  if (!a || !b) return `${startYmd} - ${endYmd}`;
+  if (a.y === b.y && a.m === b.m) {
+    return `${a.d}-${b.d} ${MONTHS_SHORT[a.m - 1]} ${a.y}`;
+  }
+  if (a.y === b.y) {
+    return `${a.d} ${MONTHS_SHORT[a.m - 1]} - ${b.d} ${MONTHS_SHORT[b.m - 1]}`;
+  }
+  return `${a.d} ${MONTHS_SHORT[a.m - 1]} ${a.y} - ${b.d} ${MONTHS_SHORT[b.m - 1]} ${b.y}`;
+}
+
+export function formatLongDateRange(startYmd: string, endYmd: string): string {
+  return `${formatDateHuman(startYmd)} - ${formatDateHuman(endYmd)}`;
+}
+
+export function primaryCover(e: Event): EventCoverImage | null {
+  const images = [...(e.cover_images ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order || a.id - b.id
+  );
+  if (images[0]?.url) return images[0];
+  if (e.cover_url) {
+    return { id: 0, url: e.cover_url, aspect_ratio: Number.NaN, sort_order: 0 };
+  }
+  return null;
 }
 
 function num(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
 }
 
-/** "RON 45" or "RON 45 - 75" from a list of division fees. */
 export function formatPriceRange(fees: number[]): string {
   if (fees.length === 0) return "RON 0";
   const values = fees.map((f) => Number(f) || 0);
@@ -98,66 +130,128 @@ export function formatPriceRange(fees: number[]): string {
   return min === max ? `RON ${num(min)}` : `RON ${num(min)} - ${num(max)}`;
 }
 
-/** Price label for an event from its division entry fees. */
 export function eventPriceLabel(e: Event): string {
   return formatPriceRange(
     (e.event_divisions ?? []).map((d) => Number(d.entry_fee) || 0)
   );
 }
 
+function formatScheduleInstant(unix: number, multiDay: boolean): string {
+  const hi = formatHiFromUnix(unix);
+  if (!multiDay) return hi;
+  const ymd = dayYmdFromUnix(unix);
+  const p = partsFromYmd(ymd);
+  if (!p) return hi;
+  return `${p.d} ${MONTHS_SHORT[p.m - 1]}, ${hi}`;
+}
+
+function formatPlayingWindow(
+  startsAt: number,
+  endsAt: number,
+  multiDay: boolean
+): string {
+  const startDay = dayYmdFromUnix(startsAt);
+  const endDay = dayYmdFromUnix(endsAt);
+  if (!multiDay) {
+    return `${formatHiFromUnix(startsAt)} - ${formatHiFromUnix(endsAt)}`;
+  }
+  if (startDay === endDay) {
+    return `${formatScheduleInstant(startsAt, true)} - ${formatHiFromUnix(endsAt)}`;
+  }
+  return `${formatScheduleInstant(startsAt, true)} - ${formatScheduleInstant(endsAt, true)}`;
+}
+
 /**
- * Check-in + unique Playing windows (start then end). Closing is omitted in the app.
+ * One schedule box per unique (check_in_at, playing_starts_at, playing_ends_at).
  */
-export function buildSchedule(e: Event): ScheduleItem[] {
-  const items: ScheduleItem[] = [];
-  if (e.arriving_time) {
-    items.push({ label: "Check-in", time: hhmm(e.arriving_time) });
-  }
+export function buildSchedule(e: Event): ScheduleGroup[] {
+  const multiDay = (e.event_nr_of_days ?? 1) > 1;
+  type Entry = { playStart: number; playEnd: number; group: ScheduleGroup };
+  const groups = new Map<string, Entry>();
 
-  const windows = (e.event_divisions ?? [])
-    .map((d) => {
-      const start = hhmm(d.playing_start_time);
-      const end = hhmm(d.playing_end_time);
-      const time = start && end ? `${start} - ${end}` : start || end;
-      return { start, end, time };
-    })
-    .filter((w) => Boolean(w.time))
-    .sort((a, b) => {
-      if (a.start !== b.start) return a.start.localeCompare(b.start);
-      return a.end.localeCompare(b.end);
-    });
-
-  const seen = new Set<string>();
-  let playingLabelUsed = false;
-  for (const w of windows) {
-    if (seen.has(w.time)) continue;
-    seen.add(w.time);
+  for (const d of e.event_divisions ?? []) {
+    const key = `${d.check_in_at ?? "null"}|${d.playing_starts_at}|${d.playing_ends_at}`;
+    if (groups.has(key)) continue;
+    const items: ScheduleItem[] = [];
+    if (d.check_in_at != null) {
+      items.push({
+        label: "Check-in",
+        time: formatScheduleInstant(d.check_in_at, multiDay),
+      });
+    }
     items.push({
-      label: playingLabelUsed ? "" : "Playing",
-      time: w.time,
+      label: "Playing",
+      time: formatPlayingWindow(d.playing_starts_at, d.playing_ends_at, multiDay),
     });
-    playingLabelUsed = true;
+    groups.set(key, {
+      playStart: d.playing_starts_at,
+      playEnd: d.playing_ends_at,
+      group: { items },
+    });
   }
 
-  return items;
+  return [...groups.values()]
+    .sort((a, b) => {
+      if (a.playStart !== b.playStart) return a.playStart - b.playStart;
+      return a.playEnd - b.playEnd;
+    })
+    .map((e) => e.group);
 }
 
 function eventBadges(e: Event) {
   return (e.badges ?? []).map((b) => ({ key: b.key, label: b.label }));
 }
 
+function eventDateFields(e: Event): {
+  date: string;
+  dateShort: string;
+  weekday: string;
+  dateModalLines: string[];
+} {
+  const startYmd = dayYmdFromUnix(e.event_starts_at);
+  const endYmd = dayYmdFromUnix(e.event_ends_at);
+  const multi = (e.event_nr_of_days ?? 1) > 1;
+
+  if (!multi) {
+    return {
+      date: formatDateHuman(startYmd),
+      dateShort: formatDateShort(startYmd),
+      weekday: formatWeekday(startYmd),
+      dateModalLines: [
+        `${formatDateHuman(startYmd)}${formatWeekday(startYmd) ? ` · ${formatWeekday(startYmd)}` : ""}`,
+      ],
+    };
+  }
+
+  return {
+    date: formatLongDateRange(startYmd, endYmd),
+    dateShort: formatCompactDateRange(startYmd, endYmd),
+    weekday: "",
+    dateModalLines: [
+      `${formatDateHuman(startYmd)} · ${formatWeekday(startYmd)}`,
+      `${formatDateHuman(endYmd)} · ${formatWeekday(endYmd)}`,
+    ],
+  };
+}
+
 export function eventToCard(
   e: Event,
   statusOverride: EventStatus = "none"
 ): EventCardData {
+  const dates = eventDateFields(e);
+  const cover = primaryCover(e);
+  const multi = (e.event_nr_of_days ?? 1) > 1;
   return {
     id: String(e.id_event),
     title: e.name,
     location: e.location?.name ?? "—",
-    date: formatDateHuman(e.date),
-    coverImage: uriSource(e.cover_url),
+    // Multi-day: compact; single-day: long form (existing card pattern).
+    date: multi ? dates.dateShort : dates.date,
+    coverImage: uriSource(cover?.url),
+    coverAspectRatio:
+      cover && Number.isFinite(cover.aspect_ratio) ? cover.aspect_ratio : null,
     status: statusOverride,
-    timing: classifyTiming(e.date),
+    timing: classifyTiming(e.event_starts_at, e.event_ends_at),
     badges: eventBadges(e),
     slug: e.slug ?? null,
   };
@@ -168,12 +262,17 @@ export function eventToDetails(
   status: EventStatus = "none"
 ): EventDetails {
   const address = (e.location?.address ?? "").trim();
+  const dates = eventDateFields(e);
+  const cover = primaryCover(e);
   return {
-    eventImage: uriSource(e.cover_url),
+    eventImage: uriSource(cover?.url),
+    coverAspectRatio:
+      cover && Number.isFinite(cover.aspect_ratio) ? cover.aspect_ratio : null,
     eventName: e.name,
-    date: formatDateHuman(e.date),
-    dateShort: formatDateShort(e.date),
-    weekday: formatWeekday(e.date),
+    date: dates.date,
+    dateShort: dates.dateShort,
+    weekday: dates.weekday,
+    dateModalLines: dates.dateModalLines,
     location: e.location?.name ?? "—",
     locationAddress: address !== "" ? address : "—",
     price: eventPriceLabel(e),
@@ -182,52 +281,37 @@ export function eventToDetails(
     organizerImage: uriSource(e.organizer?.url),
     organizerName: e.organizer?.name ?? null,
     status,
-    timing: classifyTiming(e.date),
+    timing: classifyTiming(e.event_starts_at, e.event_ends_at),
     badges: eventBadges(e),
     slug: e.slug ?? null,
   };
 }
 
-/** Entry fee charged for a division (fees live on the division). */
 export function divisionEntryFee(d: EventDivision | null | undefined): number {
   return Number(d?.entry_fee) || 0;
 }
 
-/**
- * The event's divisions as registration options. The app API exposes `players_limit`
- * but not the live headcount, so `num_spots` is the limit and the backend is the
- * authority on capacity (it 422s with `event_division_id` when a division is full).
- */
 export function eventDivisionOptions(e: Event): DivisionDetails[] {
   return (e.event_divisions ?? []).map((d) => ({
     id: d.id_event_division,
     name: d.division_title || d.division?.name || `Division ${d.division_id}`,
     price: divisionEntryFee(d),
-    description: divisionDescription(d),
+    description: divisionDescription(d, (e.event_nr_of_days ?? 1) > 1),
     num_spots: Number(d.players_limit) || 0,
-    // Server verdict for the signed-in player; false for guests / no level.
     isEligible: d.is_eligible === true,
     isActive: true,
-    color:
-      typeof d.division?.color === "string" ? d.division.color : null,
-    playingStart: hhmm(d.playing_start_time) || undefined,
-    playingEnd: hhmm(d.playing_end_time) || undefined,
+    color: typeof d.division?.color === "string" ? d.division.color : null,
+    playingStart: formatHiFromUnix(d.playing_starts_at) || undefined,
+    playingEnd: formatHiFromUnix(d.playing_ends_at) || undefined,
   }));
 }
 
-function divisionDescription(d: EventDivision): string {
-  const start = hhmm(d.playing_start_time);
-  const end = hhmm(d.playing_end_time);
-  if (start && end) return `Playing ${start} - ${end}`;
-  if (start) return `Playing from ${start}`;
+function divisionDescription(d: EventDivision, multiDay: boolean): string {
+  const window = formatPlayingWindow(d.playing_starts_at, d.playing_ends_at, multiDay);
+  if (window) return `Playing ${window}`;
   return `Up to ${Number(d.players_limit) || 0} players`;
 }
 
-/**
- * Aggregate UI status for list/home cards and event CTAs over active registrations:
- * any unpaid with amount due → pending_payment; else any awaiting → registration_pending;
- * else any paid → registered; cancelled/non-active ignored.
- */
 export function registrationToEventStatus(
   registration:
     | EventRegistration
@@ -255,7 +339,6 @@ export function registrationToEventStatus(
   return "none";
 }
 
-/** Format a unix-epoch payment deadline for unpaid registrations. */
 export function formatPaymentDueAt(
   paymentDueAt: number | null | undefined
 ): string | null {

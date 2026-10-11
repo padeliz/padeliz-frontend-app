@@ -109,7 +109,7 @@ describe('identity mutations', () => {
   it('calls the API and invalidates viewer identities after setting primary avatar', async () => {
     mockUser = { id: '3' };
     setAvatarPrimaryIdentityMock.mockResolvedValue(
-      makeGoogleIdentity({ id_identity: 11, is_avatar_primary: true })
+      makeGoogleIdentity({ id_user_identity: 11, is_avatar_primary: true })
     );
 
     const { result, client } = renderHookWithQueryClient(() =>

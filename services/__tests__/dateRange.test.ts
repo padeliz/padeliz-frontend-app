@@ -3,7 +3,10 @@ import {
   TIMING_TAB_ORDER,
   addDaysYmd,
   classifyTiming,
+  dayYmdFromUnix,
   defaultTimingIndex,
+  formatHiFromUnix,
+  productDateTimeToDate,
   rangeForTab,
   todayYmdBucharest,
 } from '@/services/dateRange';
@@ -34,12 +37,63 @@ describe('dateRange Bucharest', () => {
     expect(rangeForTab('past', 3, now).date_to).toBe(addDaysYmd(today, -1));
   });
 
-  it('classifies timing against Bucharest today', () => {
+  it('classifies timing from unix starts/ends against Bucharest today', () => {
     const now = new Date('2026-06-10T10:00:00.000Z');
     const today = todayYmdBucharest(now);
-    expect(classifyTiming(today, now)).toBe('ongoing');
-    expect(classifyTiming(addDaysYmd(today, 1), now)).toBe('upcoming');
-    expect(classifyTiming(addDaysYmd(today, -1), now)).toBe('past');
+    const startsToday = Math.floor(
+      productDateTimeToDate(today, '10:00:00').getTime() / 1000
+    );
+    const endsToday = Math.floor(
+      productDateTimeToDate(today, '18:00:00').getTime() / 1000
+    );
+    const startsTomorrow = Math.floor(
+      productDateTimeToDate(addDaysYmd(today, 1), '10:00:00').getTime() / 1000
+    );
+    const endsTomorrow = Math.floor(
+      productDateTimeToDate(addDaysYmd(today, 1), '18:00:00').getTime() / 1000
+    );
+    const startsYesterday = Math.floor(
+      productDateTimeToDate(addDaysYmd(today, -1), '10:00:00').getTime() / 1000
+    );
+    const endsYesterday = Math.floor(
+      productDateTimeToDate(addDaysYmd(today, -1), '18:00:00').getTime() / 1000
+    );
+
+    expect(classifyTiming(startsToday, endsToday, now)).toBe('ongoing');
+    expect(classifyTiming(startsTomorrow, endsTomorrow, now)).toBe('upcoming');
+    expect(classifyTiming(startsYesterday, endsYesterday, now)).toBe('past');
+  });
+
+  it('classifies multi-day overlap as ongoing when today is inside the span', () => {
+    const now = new Date('2026-06-10T10:00:00.000Z');
+    const today = todayYmdBucharest(now);
+    const starts = Math.floor(
+      productDateTimeToDate(addDaysYmd(today, -1), '22:00:00').getTime() / 1000
+    );
+    const ends = Math.floor(
+      productDateTimeToDate(addDaysYmd(today, 1), '02:00:00').getTime() / 1000
+    );
+    expect(classifyTiming(starts, ends, now)).toBe('ongoing');
+  });
+
+  it('accepts Ymd day strings for starts/ends', () => {
+    const now = new Date('2026-06-10T10:00:00.000Z');
+    const today = todayYmdBucharest(now);
+    expect(classifyTiming(today, today, now)).toBe('ongoing');
+    expect(classifyTiming(addDaysYmd(today, 1), addDaysYmd(today, 2), now)).toBe(
+      'upcoming'
+    );
+    expect(classifyTiming(addDaysYmd(today, -2), addDaysYmd(today, -1), now)).toBe(
+      'past'
+    );
+  });
+
+  it('formats Bucharest day and H:i from unix', () => {
+    const unix = Math.floor(
+      productDateTimeToDate('2026-06-15', '18:00:00').getTime() / 1000
+    );
+    expect(dayYmdFromUnix(unix)).toBe('2026-06-15');
+    expect(formatHiFromUnix(unix)).toBe('18:00');
   });
 
   it('orders tabs Past→Ongoing→Upcoming and defaults Ongoing when visible', () => {

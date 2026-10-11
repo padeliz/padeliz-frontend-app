@@ -42,8 +42,8 @@ describe('discoveryNeeded (intercept rule)', () => {
           friends: [
             {
               id_player_friends_source: 1,
-              player_id: 9,
-              friend_player_id: null,
+              player_user_id: 9,
+              friend_player_user_id: null,
               full_name: 'Mihai',
               email: null,
               phone: null,
@@ -78,18 +78,18 @@ describe('discovery form helpers', () => {
     ];
     const inputs = buildFriendInputs(rows);
     expect(inputs).toHaveLength(3);
-    expect(inputs[0]).toEqual({ friend_player_id: null, full_name: 'A', email: null, phone: null });
-    expect(inputs[1]).toEqual({ friend_player_id: null, full_name: null, email: 'b@x.com', phone: null });
+    expect(inputs[0]).toEqual({ friend_player_user_id: null, full_name: 'A', email: null, phone: null });
+    expect(inputs[1]).toEqual({ friend_player_user_id: null, full_name: null, email: 'b@x.com', phone: null });
   });
 
-  it('turns a suggestion into a row carrying friend_player_id', () => {
+  it('turns a suggestion into a row carrying friend_player_user_id', () => {
     const row = friendRowFromSuggestion({
-      friend_player_id: 12,
+      friend_player_user_id: 12,
       full_name: 'Ana',
       touched_at: 1,
     });
     expect(buildFriendInputs([row])).toEqual([
-      { friend_player_id: 12, full_name: 'Ana', email: null, phone: null },
+      { friend_player_user_id: 12, full_name: 'Ana', email: null, phone: null },
     ]);
   });
 
@@ -99,8 +99,8 @@ describe('discovery form helpers', () => {
       newFriendRow({ full_name: 'Ana', phone: '   ' }),
     ]);
     expect(inputs).toEqual([
-      { friend_player_id: null, full_name: null, email: null, phone: '+40712000009' },
-      { friend_player_id: null, full_name: 'Ana', email: null, phone: null },
+      { friend_player_user_id: null, full_name: null, email: null, phone: '+40712000009' },
+      { friend_player_user_id: null, full_name: 'Ana', email: null, phone: null },
     ]);
     expect(
       discoveryFormError({
@@ -111,17 +111,17 @@ describe('discovery form helpers', () => {
     ).toBeNull();
   });
 
-  it('turns a search result into a row with friend_player_id and name', () => {
+  it('turns a search result into a row with friend_player_user_id and name', () => {
     const row = friendRowFromSearchResult({
-      id_player: 31,
+      id_user: 31,
       name: 'Ioana Vasilescu',
       email_masked: 'i***@example.com',
       phone_masked: '+*********009',
       avatar_url: null,
     });
-    expect(row).toMatchObject({ friend_player_id: 31, full_name: 'Ioana Vasilescu', phone: '' });
+    expect(row).toMatchObject({ friend_player_user_id: 31, full_name: 'Ioana Vasilescu', phone: '' });
     expect(buildFriendInputs([row])).toEqual([
-      { friend_player_id: 31, full_name: 'Ioana Vasilescu', email: null, phone: null },
+      { friend_player_user_id: 31, full_name: 'Ioana Vasilescu', email: null, phone: null },
     ]);
   });
 

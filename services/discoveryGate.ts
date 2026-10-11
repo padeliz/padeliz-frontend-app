@@ -35,7 +35,7 @@ export function discoveryNeeded(
 
 export type FriendRow = {
   key: string;
-  friend_player_id: number | null;
+  friend_player_user_id: number | null;
   full_name: string;
   email: string;
   phone: string;
@@ -47,7 +47,7 @@ export function newFriendRow(partial: Partial<FriendRow> = {}): FriendRow {
   rowSeq += 1;
   return {
     key: `friend-${rowSeq}`,
-    friend_player_id: null,
+    friend_player_user_id: null,
     full_name: "",
     email: "",
     phone: "",
@@ -57,19 +57,19 @@ export function newFriendRow(partial: Partial<FriendRow> = {}): FriendRow {
 
 /** A picked search result: links the real player and carries their name. */
 export function friendRowFromSearchResult(p: PlayerSearchResult): FriendRow {
-  return newFriendRow({ friend_player_id: p.id_player, full_name: p.name });
+  return newFriendRow({ friend_player_user_id: p.id_user, full_name: p.name });
 }
 
 export function friendRowFromSuggestion(s: FriendSuggestion): FriendRow {
   return newFriendRow({
-    friend_player_id: s.friend_player_id,
+    friend_player_user_id: s.friend_player_user_id,
     full_name: s.full_name,
   });
 }
 
 function rowHasIdentifier(r: FriendRow): boolean {
   return (
-    r.friend_player_id != null ||
+    r.friend_player_user_id != null ||
     r.full_name.trim() !== "" ||
     r.email.trim() !== "" ||
     r.phone.trim() !== ""
@@ -82,7 +82,7 @@ export function buildFriendInputs(rows: FriendRow[]): FriendInput[] {
     .filter(rowHasIdentifier)
     .slice(0, MAX_FRIENDS)
     .map((r) => ({
-      friend_player_id: r.friend_player_id,
+      friend_player_user_id: r.friend_player_user_id,
       full_name: r.full_name.trim() || null,
       email: r.email.trim() || null,
       phone: r.phone.trim() || null,

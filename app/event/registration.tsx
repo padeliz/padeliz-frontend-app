@@ -63,11 +63,11 @@ import {
   uploadBankProof,
 } from '@/services/registration';
 import { confirmAsync } from '@/services/confirm';
+import { formatHiFromUnix } from '@/services/dateRange';
 import {
   eventDivisionOptions,
   eventToDetails,
   formatPaymentDueAt,
-  hhmm,
   registrationToEventStatus,
 } from '@/services/mappers';
 import type {
@@ -164,8 +164,8 @@ function playingTimeFor(
       (d) => d.id_event_division === reg.event_division_id
     );
   if (!div) return '—';
-  const start = hhmm(div.playing_start_time);
-  const end = hhmm(div.playing_end_time);
+  const start = formatHiFromUnix(div.playing_starts_at);
+  const end = formatHiFromUnix(div.playing_ends_at);
   if (start && end) return `${start} - ${end}`;
   if (start) return `from ${start}`;
   return '—';
@@ -419,7 +419,7 @@ export default function RegistrationScreen() {
           setSelectedBenefitIds([...appliedOptional]);
           const candidates = quoteData.referrer_candidates ?? [];
           if (candidates.length === 1) {
-            setSelectedReferrerId(candidates[0].referrer_player_id);
+            setSelectedReferrerId(candidates[0].referrer_player_user_id);
           }
         } else {
           setQuote(null);
@@ -655,7 +655,7 @@ export default function RegistrationScreen() {
 
   const resolveReferrerId = (override?: number | null) => {
     if (referrerCandidates.length === 1) {
-      return referrerCandidates[0].referrer_player_id;
+      return referrerCandidates[0].referrer_player_user_id;
     }
     if (override !== undefined) return override;
     return selectedReferrerId;
@@ -674,7 +674,7 @@ export default function RegistrationScreen() {
     try {
       const checkout = await commitBenefitSelections(checkoutId, {
         selected_benefit_ids: benefitIds,
-        referrer_player_id: referrerId ?? undefined,
+        referrer_player_user_id: referrerId ?? undefined,
       });
       if (checkout.items) {
         const next = regsFromCheckout(checkout, registrations);

@@ -1,7 +1,8 @@
-import { View, Text, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
+import AspectCover from '@/components/Events/AspectCover';
 import { EventCardData, EventBadge } from '@/types/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -38,30 +39,40 @@ export default function EventCard({ event, onPress }: Props) {
       onPress={onPress}
       testID={`event-card-${event.id}`}
     >
-      <View style={styles.imageContainer}>
-        {event.coverImage ? (
-          <Image
+      {event.coverImage ? (
+        <View style={styles.imageContainer}>
+          <AspectCover
             source={event.coverImage}
-            style={styles.coverImage}
+            aspectRatio={event.coverAspectRatio}
             testID="event-card-cover"
           />
-        ) : (
-          <View style={styles.coverEmpty} testID="event-card-cover-empty" />
-        )}
-        {badges.length > 0 ? (
-          <View style={styles.badgeStack} testID="event-card-badges">
-            {badges.map((badge) => (
-              <View
-                key={badge.key}
-                style={[styles.badge, { backgroundColor: badgeColor(badge.key) }]}
-                testID={`event-badge-${badge.key}`}
-              >
-                <Text style={styles.badgeText}>{badge.label}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-      </View>
+          {badges.length > 0 ? (
+            <View style={styles.badgeStack} testID="event-card-badges">
+              {badges.map((badge) => (
+                <View
+                  key={badge.key}
+                  style={[styles.badge, { backgroundColor: badgeColor(badge.key) }]}
+                  testID={`event-badge-${badge.key}`}
+                >
+                  <Text style={styles.badgeText}>{badge.label}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      ) : badges.length > 0 ? (
+        <View style={styles.badgeOnlyRow} testID="event-card-badges">
+          {badges.map((badge) => (
+            <View
+              key={badge.key}
+              style={[styles.badge, { backgroundColor: badgeColor(badge.key) }]}
+              testID={`event-badge-${badge.key}`}
+            >
+              <Text style={styles.badgeText}>{badge.label}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       <View style={styles.info}>
         <Text style={styles.title}>{event.title}</Text>
         <View style={styles.detailRow}>
@@ -86,17 +97,15 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 192,
+    position: 'relative',
   },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  coverEmpty: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.GRAY,
+  badgeOnlyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingTop: 13,
   },
   badgeStack: {
     position: 'absolute',

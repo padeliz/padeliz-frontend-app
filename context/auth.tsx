@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const finishLogin = React.useCallback(
     async (data: AuthData) => {
       await applyToken(data.token);
-      setUser(mapPlayerToUser(data.player));
+      setUser(mapPlayerToUser(data.user));
       setError(null);
       // Fire-and-forget: push registration must never block the login flow.
       void syncPushToken();

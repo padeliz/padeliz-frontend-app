@@ -19,14 +19,14 @@ export function primaryPlayerPhone(player: Player): string {
   return phones[0]?.phone ?? "";
 }
 
-/** Google identities ordered by linked_at asc, then id_identity asc. */
+/** Google identities ordered by linked_at asc, then id_user_identity asc. */
 export function sortedGoogleIdentities(player: Player): PlayerIdentity[] {
   return (player.identities ?? [])
     .filter((i) => i.provider === PROVIDER_GOOGLE)
     .slice()
     .sort((a, b) => {
       if (a.linked_at !== b.linked_at) return a.linked_at - b.linked_at;
-      return a.id_identity - b.id_identity;
+      return a.id_user_identity - b.id_user_identity;
     });
 }
 

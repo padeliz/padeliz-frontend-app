@@ -19,7 +19,7 @@ function makeCheckout(
   return {
     id_checkout: 901,
     event_id: 42,
-    player_id: 9,
+    player_user_id: 9,
     status: 'open',
     total_amount: 45,
     payment_method: null,

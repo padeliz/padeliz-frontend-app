@@ -5,9 +5,9 @@
  * `types/types.ts`; mappers in `services/mappers.ts` translate between them.
  *
  * Conventions confirmed from the backend:
- * - Timestamps (inserted_at, updated_at, submitted_at, ...) are Unix epoch ints.
- * - Event `date` is a "YYYY-MM-DD" string; times are "HH:MM:SS" strings.
- * - Uploaded files are `{ id, url }` with absolute URLs.
+ * - Timestamps (inserted_at, updated_at, event_starts_at, …) are Unix epoch ints.
+ * - Calendar timing uses Europe/Bucharest days of those unix bounds.
+ * - Uploaded files / covers are absolute URLs.
  */
 
 // ---------- Response envelopes ----------
@@ -90,8 +90,10 @@ export interface EventDivision {
    */
   is_eligible?: boolean | null;
   court?: string | null;
-  playing_start_time: string | null; // "HH:MM:SS"
-  playing_end_time: string | null; // "HH:MM:SS"
+  /** Unix epoch check-in; omit Check-in in the App when null. */
+  check_in_at: number | null;
+  playing_starts_at: number;
+  playing_ends_at: number;
   player_opponents_nr?: number;
   player_matches_repeat?: number;
   include_scores?: boolean;
@@ -120,6 +122,15 @@ export interface Organizer {
   updated_at?: number | null;
 }
 
+/** Child cover from GET /app/events (list/show). */
+export interface EventCoverImage {
+  id: number;
+  url: string;
+  /** Width / height; used for temporary cover wrapper height. */
+  aspect_ratio: number;
+  sort_order: number;
+}
+
 export interface Event {
   id_event: number;
   /** Server-generated URL slug (read-only). */
@@ -129,10 +140,19 @@ export interface Event {
   name: string;
   /** HTML description; omitted on app index, present on show. */
   description?: string;
+  /** Primary cover URL (lowest sort_order); kept for list role. */
   cover_url?: string | null;
-  date: string; // "YYYY-MM-DD"
-  arriving_time: string; // "HH:MM:SS"
-  closing_time: string; // "HH:MM:SS"
+  /** Ordered cover images (max 2); primary is sort_order ascending. */
+  cover_images?: EventCoverImage[];
+  /** Unix epoch when the event window starts. */
+  event_starts_at: number;
+  /** Unix epoch when the event window ends. */
+  event_ends_at: number;
+  /**
+   * Inclusive Bucharest calendar days from event_starts_at to event_ends_at.
+   * Computed by the API (not stored).
+   */
+  event_nr_of_days: number;
   finalized_at?: number | null;
   /** Unix epoch until which players may register. */
   registration_allowed_until: number;
@@ -165,7 +185,10 @@ export interface EventFilterOptions {
 export interface EventHistoryItem {
   id_event: number;
   name: string;
+  /** Bucharest calendar day of event_starts_at ("YYYY-MM-DD"). */
   date: string;
+  event_starts_at?: number;
+  event_ends_at?: number;
   slug?: string | null;
   division_titles: string[];
 }
@@ -177,7 +200,7 @@ export interface UploadedImage {
 }
 
 export interface PlayerEmail {
-  id_player_email: number;
+  id_user_email: number;
   email: string;
   purposes: string[];
   is_primary: boolean;
@@ -185,7 +208,7 @@ export interface PlayerEmail {
 }
 
 export interface PlayerPhone {
-  id_player_phone: number;
+  id_user_phone: number;
   phone: string;
   purposes: string[];
   is_primary: boolean;
@@ -193,7 +216,7 @@ export interface PlayerPhone {
 }
 
 export interface PlayerIdentity {
-  id_identity: number;
+  id_user_identity: number;
   provider: string;
   email: string | null;
   display_name: string | null;
@@ -204,7 +227,7 @@ export interface PlayerIdentity {
 }
 
 export interface Player {
-  id_player: number;
+  id_user: number;
   name: string | null;
   skill_division: number | null;
   first_name: string | null;
@@ -237,7 +260,7 @@ export interface LinkGoogleIdentityData {
 /** Auth login response payload (data of POST /app/auth/google | /app/auth/dev-login). */
 export interface AuthData {
   token: string;
-  player: Player;
+  user: Player;
   user_type: string; // "player"
 }
 
@@ -292,7 +315,7 @@ export interface AssessmentProfileImage {
 /** A level the player holds (data of GET /app/my/level-assessment/current-level). */
 export interface PlayerLevel {
   id_player_level: number;
-  player_id: number;
+  player_user_id: number;
   /** Two-decimal numeric level, e.g. "3.25". */
   level: string;
   band_name: string | null;
@@ -304,7 +327,7 @@ export interface PlayerLevel {
 
 export interface PlayerLevelAssessment {
   id_player_level_assessment: number;
-  player_id: number;
+  player_user_id: number;
   player_custom_field_submission_id: number | null;
   submitted_at: number | null;
   resubmitted_at: number | null;
@@ -349,8 +372,8 @@ export interface MediaSource {
 
 export interface PlayerFriendsSource {
   id_player_friends_source: number;
-  player_id: number;
-  friend_player_id: number | null;
+  player_user_id: number;
+  friend_player_user_id: number | null;
   friend_name?: string | null;
   full_name: string | null;
   email: string | null;
@@ -370,7 +393,7 @@ export interface DiscoverySummary {
 
 /** One friend row sent to PUT /app/my/discovery/friends. */
 export interface FriendInput {
-  friend_player_id?: number | null;
+  friend_player_user_id?: number | null;
   full_name?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -378,14 +401,14 @@ export interface FriendInput {
 
 /** Item of GET /app/my/discovery/suggest-friends. */
 export interface FriendSuggestion {
-  friend_player_id: number;
+  friend_player_user_id: number;
   full_name: string;
   touched_at: number;
 }
 
 /** Item of GET /app/my/discovery/search-players (contacts are masked server-side). */
 export interface PlayerSearchResult {
-  id_player: number;
+  id_user: number;
   name: string;
   email_masked: string | null;
   phone_masked: string | null;
@@ -403,7 +426,7 @@ export interface PlayerStudentProofFile {
 
 export interface PlayerStudentProof {
   id_player_student_proof: number;
-  player_id: number;
+  player_user_id: number;
   /** "YYYY-MM-DD". */
   student_until: string | null;
   sort_order?: number;
@@ -548,7 +571,7 @@ export interface CheckoutQuoteLine {
 }
 
 export interface ReferrerCandidate {
-  referrer_player_id: number;
+  referrer_player_user_id: number;
   latest_touched_at: number;
 }
 
@@ -563,26 +586,26 @@ export interface CheckoutQuoteData {
 /** Body for PATCH /app/registration-checkouts/{id}/benefit-selections */
 export interface BenefitSelectionsBody {
   selected_benefit_ids?: number[];
-  referrer_player_id?: number | null;
+  referrer_player_user_id?: number | null;
 }
 
 export interface ReferralInviteeInput {
   email?: string | null;
   phone?: string | null;
-  player_id?: number | null;
+  player_user_id?: number | null;
 }
 
 export interface EventReferralCodeInvitee {
   id_invitee?: number;
   email?: string | null;
   phone?: string | null;
-  player_id?: number | null;
+  player_user_id?: number | null;
 }
 
 export interface EventReferralCode {
   id_referral_code: number;
   event_id: number;
-  referrer_player_id: number;
+  referrer_player_user_id: number;
   code: string;
   expires_at: number;
   revoked_at: number | null;
@@ -613,8 +636,8 @@ export interface ReferralTouchpoint {
   id_touchpoint?: number;
   event_id: number;
   referral_code_id?: number;
-  referrer_player_id?: number;
-  referred_player_id?: number;
+  referrer_player_user_id?: number;
+  referred_player_user_id?: number;
   code?: string;
   touched_at?: number;
   discount_eligible?: boolean;
@@ -624,7 +647,7 @@ export interface ReferralTouchpoint {
 export interface EventRegistrationCheckout {
   id_checkout: number;
   event_id: number;
-  player_id: number;
+  player_user_id: number;
   status: CheckoutStatus | string;
   total_amount: number;
   payment_method: RegistrationPaymentMethod | null;
@@ -646,7 +669,7 @@ export interface EventRegistrationCheckout {
 export interface EventRegistration {
   id_registration: number;
   event_id: number;
-  player_id: number;
+  player_user_id: number;
   event_division_id: number | null;
   /** Open or latest checkout that includes this registration, when known. */
   checkout_id?: number | null;

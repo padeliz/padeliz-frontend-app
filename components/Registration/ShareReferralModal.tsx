@@ -20,6 +20,7 @@ import * as Fonts from '@/constants/Fonts';
 import LoginOptions from '@/components/Login/LoginOptions';
 import { useAuth } from '@/context/auth';
 import { confirmAsync } from '@/services/confirm';
+import { classifyTiming } from '@/services/dateRange';
 import {
   createReferralCode,
   eventShareUrl,
@@ -37,7 +38,12 @@ type Props = {
   eventId: number;
   eventName?: string;
   eventSlug?: string | null;
+  eventStartsAt: number;
+  eventEndsAt: number;
+  registrationAllowedUntil: number;
   onClose: () => void;
+  /** Optional clock for tests. */
+  now?: Date;
 };
 
 function formatExpiry(expiresAt: number): string {
@@ -66,7 +72,11 @@ export default function ShareReferralModal({
   eventId,
   eventName,
   eventSlug = null,
+  eventStartsAt,
+  eventEndsAt,
+  registrationAllowedUntil,
   onClose,
+  now,
 }: Props) {
   const { user } = useAuth();
   const [tab, setTab] = useState<TabKey>('event');
@@ -75,10 +85,26 @@ export default function ShareReferralModal({
   const [error, setError] = useState<string | null>(null);
   const [remainingSlots, setRemainingSlots] = useState(0);
   const [codes, setCodes] = useState<EventReferralCode[]>([]);
+  const [codesLoaded, setCodesLoaded] = useState(false);
   const [invitees, setInvitees] = useState<InviteeDraft[]>([
     { email: '', phone: '' },
   ]);
   const [copied, setCopied] = useState<string | null>(null);
+
+  const clock = now ?? new Date();
+  const nowSec = Math.floor(clock.getTime() / 1000);
+  const calendarPast =
+    classifyTiming(eventStartsAt, eventEndsAt, clock) === 'past';
+  const createAllowed = nowSec < registrationAllowedUntil;
+  const revokeAllowed = nowSec < eventStartsAt;
+  /** Past + codes → read-only (no create / revoke / add / remove). */
+  const readOnlyPast = calendarPast && codes.length > 0;
+  /**
+   * Hide Share referral when calendar-Past and zero codes (guests count as
+   * zero; authed waits until codes load).
+   */
+  const showReferralTab =
+    !calendarPast || (Boolean(user) && codesLoaded && codes.length > 0);
 
   const eventUrl = eventShareUrl(eventId, eventSlug);
   const referralSubtitle = `Invite newcomers join ${eventName ?? 'this event'} with your personal code.`;
@@ -92,6 +118,7 @@ export default function ShareReferralModal({
     if (!user) return;
     setLoading(true);
     setError(null);
+    setCodesLoaded(false);
     try {
       const data = await fetchReferralCodes(eventId);
       setRemainingSlots(data.remaining_slots);
@@ -99,6 +126,7 @@ export default function ShareReferralModal({
     } catch (e) {
       setError((e as Error).message || 'Could not load referral codes.');
     } finally {
+      setCodesLoaded(true);
       setLoading(false);
     }
   }, [eventId, user]);
@@ -109,29 +137,42 @@ export default function ShareReferralModal({
     setInvitees([{ email: '', phone: '' }]);
     setCopied(null);
     setError(null);
+    setCodes([]);
+    setCodesLoaded(false);
     if (user) void load();
+    else setCodesLoaded(true);
   }, [visible, load, user]);
 
+  useEffect(() => {
+    if (!showReferralTab && tab === 'referral') {
+      setTab('event');
+    }
+  }, [showReferralTab, tab]);
+
   const maxInvitees = Math.max(1, Math.min(6, remainingSlots || 1));
+  const canMutateInvitees = !readOnlyPast && createAllowed && remainingSlots > 0;
 
   const addInvitee = () => {
-    if (invitees.length >= maxInvitees) return;
+    if (!canMutateInvitees || invitees.length >= maxInvitees) return;
     setInvitees((prev) => [...prev, { email: '', phone: '' }]);
   };
 
   const updateInvitee = (index: number, patch: Partial<InviteeDraft>) => {
+    if (!canMutateInvitees) return;
     setInvitees((prev) =>
       prev.map((row, i) => (i === index ? { ...row, ...patch } : row))
     );
   };
 
   const removeInvitee = (index: number) => {
+    if (!canMutateInvitees) return;
     setInvitees((prev) =>
       prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)
     );
   };
 
   const handleCreate = async () => {
+    if (readOnlyPast || !createAllowed) return;
     const payload: ReferralInviteeInput[] = invitees
       .map((row) => ({
         email: row.email.trim() || null,
@@ -163,6 +204,7 @@ export default function ShareReferralModal({
   };
 
   const handleRevoke = async (code: EventReferralCode) => {
+    if (readOnlyPast || !revokeAllowed) return;
     const confirmed = await confirmAsync(
       'Revoke code?',
       'Players won’t be able to use this referral code.'
@@ -228,18 +270,20 @@ export default function ShareReferralModal({
                 Share event
               </Text>
             </Pressable>
-            <Pressable
-              style={[styles.tab, tab === 'referral' && styles.tabActive]}
-              onPress={() => setTab('referral')}
-              testID="share-tab-referral"
-            >
-              <Text style={[styles.tabLabel, tab === 'referral' && styles.tabLabelActive]}>
-                Share referral
-              </Text>
-            </Pressable>
+            {showReferralTab ? (
+              <Pressable
+                style={[styles.tab, tab === 'referral' && styles.tabActive]}
+                onPress={() => setTab('referral')}
+                testID="share-tab-referral"
+              >
+                <Text style={[styles.tabLabel, tab === 'referral' && styles.tabLabelActive]}>
+                  Share referral
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
 
-          {tab === 'event' ? (
+          {tab === 'event' || !showReferralTab ? (
             <View style={styles.eventTab} testID="share-event-panel">
               <Text style={styles.eventSubtitle}>
                 Share a link to this event. Anyone can open it in the browser.
@@ -288,66 +332,74 @@ export default function ShareReferralModal({
                     </Text>
                   ) : null}
 
-                  {remainingSlots > 0 ? (
+                  {readOnlyPast ? null : remainingSlots > 0 ? (
                     <View style={styles.createBlock}>
                       <Text style={styles.sectionLabel}>
                         Invitees (1–{maxInvitees})
                       </Text>
-                      {invitees.map((row, index) => (
-                        <View key={index} style={styles.inviteeRow}>
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Email"
-                            placeholderTextColor={Colors.INACTIVE}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            value={row.email}
-                            onChangeText={(text) => updateInvitee(index, { email: text })}
-                            testID={`invitee-email-${index}`}
-                          />
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Phone"
-                            placeholderTextColor={Colors.INACTIVE}
-                            keyboardType="phone-pad"
-                            value={row.phone}
-                            onChangeText={(text) => updateInvitee(index, { phone: text })}
-                            testID={`invitee-phone-${index}`}
-                          />
-                          {invitees.length > 1 ? (
-                            <Pressable onPress={() => removeInvitee(index)} hitSlop={8}>
-                              <Text style={styles.remove}>Remove</Text>
+                      {!createAllowed ? (
+                        <Text style={styles.emptySlots} testID="referral-create-closed">
+                          Referral codes can no longer be created for this event.
+                        </Text>
+                      ) : (
+                        <>
+                          {invitees.map((row, index) => (
+                            <View key={index} style={styles.inviteeRow}>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="Email"
+                                placeholderTextColor={Colors.INACTIVE}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                                value={row.email}
+                                onChangeText={(text) => updateInvitee(index, { email: text })}
+                                testID={`invitee-email-${index}`}
+                              />
+                              <TextInput
+                                style={styles.input}
+                                placeholder="Phone"
+                                placeholderTextColor={Colors.INACTIVE}
+                                keyboardType="phone-pad"
+                                value={row.phone}
+                                onChangeText={(text) => updateInvitee(index, { phone: text })}
+                                testID={`invitee-phone-${index}`}
+                              />
+                              {invitees.length > 1 ? (
+                                <Pressable onPress={() => removeInvitee(index)} hitSlop={8}>
+                                  <Text style={styles.remove}>Remove</Text>
+                                </Pressable>
+                              ) : null}
+                            </View>
+                          ))}
+                          <View style={styles.createActionsRow} testID="create-invitee-actions">
+                            {invitees.length < maxInvitees ? (
+                              <Pressable onPress={addInvitee} testID="add-invitee">
+                                <Text style={styles.addLink}>+ Add invitee</Text>
+                              </Pressable>
+                            ) : (
+                              <View />
+                            )}
+                            <Pressable
+                              style={[
+                                styles.createCodeBtn,
+                                (busy || !createAllowed) && styles.btnDisabled,
+                              ]}
+                              disabled={busy || !createAllowed}
+                              onPress={() => void handleCreate()}
+                              testID="create-referral-code"
+                            >
+                              {busy ? (
+                                <ActivityIndicator
+                                  color={Colors.WHITE}
+                                  testID="create-referral-code-loading"
+                                />
+                              ) : (
+                                <Text style={styles.primaryBtnText}>Create code</Text>
+                              )}
                             </Pressable>
-                          ) : null}
-                        </View>
-                      ))}
-                      <View style={styles.createActionsRow} testID="create-invitee-actions">
-                        {invitees.length < maxInvitees ? (
-                          <Pressable onPress={addInvitee} testID="add-invitee">
-                            <Text style={styles.addLink}>+ Add invitee</Text>
-                          </Pressable>
-                        ) : (
-                          <View />
-                        )}
-                        <Pressable
-                          style={[
-                            styles.createCodeBtn,
-                            busy && styles.btnDisabled,
-                          ]}
-                          disabled={busy}
-                          onPress={() => void handleCreate()}
-                          testID="create-referral-code"
-                        >
-                          {busy ? (
-                            <ActivityIndicator
-                              color={Colors.WHITE}
-                              testID="create-referral-code-loading"
-                            />
-                          ) : (
-                            <Text style={styles.primaryBtnText}>Create code</Text>
-                          )}
-                        </Pressable>
-                      </View>
+                          </View>
+                        </>
+                      )}
                     </View>
                   ) : (
                     <Text style={styles.emptySlots}>
@@ -396,13 +448,15 @@ export default function ShareReferralModal({
                                 >
                                   <Text style={styles.addLink}>Share</Text>
                                 </Pressable>
-                                <Pressable
-                                  onPress={() => void handleRevoke(code)}
-                                  disabled={busy}
-                                  testID={`revoke-referral-${code.id_referral_code}`}
-                                >
-                                  <Text style={styles.revoke}>Revoke</Text>
-                                </Pressable>
+                                {!readOnlyPast && revokeAllowed ? (
+                                  <Pressable
+                                    onPress={() => void handleRevoke(code)}
+                                    disabled={busy}
+                                    testID={`revoke-referral-${code.id_referral_code}`}
+                                  >
+                                    <Text style={styles.revoke}>Revoke</Text>
+                                  </Pressable>
+                                ) : null}
                               </View>
                             ) : null}
                           </View>

@@ -5,10 +5,12 @@ import type { EventDetails } from '@/types/types';
 
 const event: EventDetails = {
   eventImage: { uri: 'https://example.com/e.png' },
+  coverAspectRatio: 1.5,
   eventName: 'Minitour 21',
   date: '15 June 2099',
   dateShort: '15 Jun 2099',
   weekday: 'Monday',
+  dateModalLines: ['15 June 2099 · Monday'],
   location: 'Padel Arena',
   locationAddress: 'Str. Exemplu 1',
   price: 'RON 45',

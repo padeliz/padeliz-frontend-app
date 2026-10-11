@@ -122,7 +122,7 @@ jest.mock('@/services/registration', () => {
     commitBenefitSelections: jest.fn(async (checkoutId: number) => ({
       id_checkout: checkoutId,
       event_id: 42,
-      player_id: 9,
+      player_user_id: 9,
       status: 'open',
       total_amount: 45,
       payment_method: null,
@@ -152,7 +152,7 @@ const BANK_SETTINGS: BankTransferSettings = {
 const mockOpenCheckout: EventRegistrationCheckout = {
   id_checkout: 901,
   event_id: EDITION_ID,
-  player_id: 9,
+  player_user_id: 9,
   status: 'open',
   total_amount: 45,
   payment_method: null,
@@ -289,7 +289,7 @@ describe('division / reserve', () => {
       checkout: {
         id_checkout: 901,
         event_id: EDITION_ID,
-        player_id: 9,
+        player_user_id: 9,
         status: 'open',
         total_amount: 90,
         payment_method: null,
@@ -476,7 +476,7 @@ describe('payment step', () => {
       checkout: {
         id_checkout: 901,
         event_id: EDITION_ID,
-        player_id: 9,
+        player_user_id: 9,
         status: 'open',
         total_amount: 90,
         payment_method: 'netopia',
@@ -517,7 +517,7 @@ describe('payment step', () => {
       checkout: {
         id_checkout: 901,
         event_id: EDITION_ID,
-        player_id: 9,
+        player_user_id: 9,
         status: 'awaiting_proof',
         total_amount: 90,
         payment_method: 'bank_transfer',
@@ -568,8 +568,8 @@ describe('payment step', () => {
       checkout_id: 901,
       total_amount: 90,
       referrer_candidates: [
-        { referrer_player_id: 11, latest_touched_at: 1_700_000_000 },
-        { referrer_player_id: 12, latest_touched_at: 1_700_000_100 },
+        { referrer_player_user_id: 11, latest_touched_at: 1_700_000_000 },
+        { referrer_player_user_id: 12, latest_touched_at: 1_700_000_100 },
       ],
       lines: [
         {
@@ -605,7 +605,7 @@ describe('payment step', () => {
     await waitFor(() =>
       expect(commitBenefitSelections).toHaveBeenCalledWith(901, {
         selected_benefit_ids: [],
-        referrer_player_id: 11,
+        referrer_player_user_id: 11,
       })
     );
 
@@ -613,7 +613,7 @@ describe('payment step', () => {
     await waitFor(() =>
       expect(commitBenefitSelections).toHaveBeenCalledWith(901, {
         selected_benefit_ids: [3],
-        referrer_player_id: 11,
+        referrer_player_user_id: 11,
       })
     );
   });
@@ -728,7 +728,7 @@ describe('status step', () => {
       checkout: {
         id_checkout: 901,
         event_id: EDITION_ID,
-        player_id: 9,
+        player_user_id: 9,
         status: 'open',
         total_amount: 45,
         payment_method: null,
@@ -781,7 +781,7 @@ describe('status step', () => {
       checkout: {
         id_checkout: 901,
         event_id: EDITION_ID,
-        player_id: 9,
+        player_user_id: 9,
         status: 'open',
         total_amount: 45,
         payment_method: null,

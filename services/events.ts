@@ -59,7 +59,7 @@ export function clearEventCache(): void {
   eventCache.clear();
 }
 
-/** Ordering for GET /app/events (date, then arriving_time). */
+/** Ordering for GET /app/events (event_starts_at). */
 export type EventListSort = "asc" | "desc";
 
 /** Chip / membership filters + explicit sort for GET /app/events. */

@@ -95,20 +95,20 @@ export default function StepPayment({
             Multiple referral links matched — pick one referrer before choosing optional benefits.
           </Text>
           {referrerCandidates.map((candidate) => {
-            const selected = selectedReferrerId === candidate.referrer_player_id;
+            const selected = selectedReferrerId === candidate.referrer_player_user_id;
             return (
               <Pressable
-                key={candidate.referrer_player_id}
-                testID={`referrer-${candidate.referrer_player_id}`}
+                key={candidate.referrer_player_user_id}
+                testID={`referrer-${candidate.referrer_player_user_id}`}
                 style={styles.methodCard}
-                onPress={() => onSelectReferrer(candidate.referrer_player_id)}
+                onPress={() => onSelectReferrer(candidate.referrer_player_user_id)}
               >
                 <View style={[styles.radio, selected && styles.radioSelected]}>
                   {selected && <View style={styles.radioInner} />}
                 </View>
                 <View style={styles.methodInfo}>
                   <Text style={styles.methodName}>
-                    Player #{candidate.referrer_player_id}
+                    Player #{candidate.referrer_player_user_id}
                   </Text>
                   <Text style={styles.methodDescription}>
                     Latest touch{' '}

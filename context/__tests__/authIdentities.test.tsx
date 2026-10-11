@@ -19,7 +19,7 @@ jest.mock('@/services/apiClient', () => ({
 
 jest.mock('@/services/identities', () => ({
   linkGoogleIdentity: jest.fn(async () => ({
-    identity: { id_identity: 99, provider: 'google' },
+    identity: { id_user_identity: 99, provider: 'google' },
     result_code: 'linked',
   })),
 }));
@@ -59,7 +59,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   (apiPost as jest.Mock).mockResolvedValue({
     token: 't',
-    player: PLAYER,
+    user: PLAYER,
   });
   (apiGetEnvelope as jest.Mock).mockResolvedValue(
     makePlayer({ emails: [makePlayer().emails![0]] })

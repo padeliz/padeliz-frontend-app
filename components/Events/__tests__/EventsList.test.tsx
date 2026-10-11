@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import EventsList from '@/components/Events/EventsList';
 import { EVENTS_CHIP_SCROLL_STYLE } from '@/services/eventsListLayout';
-import type { EventListFilters } from '@/services/events';
+import { fetchFilterOptions, type EventListFilters } from '@/services/events';
 let mockUser: { id: string } | null = null;
 
 jest.mock('@/context/auth', () => ({
@@ -39,11 +39,13 @@ describe('EventsList', () => {
   beforeEach(() => {
     mockUser = null;
     mockUseEventsPager.mockClear();
+    (fetchFilterOptions as jest.Mock).mockClear();
   });
 
-  it('uses shared chip scroll layout with flexShrink 0', () => {
+  it('uses shared chip scroll layout with flexShrink 0', async () => {
     render(<EventsList onSelectEvent={jest.fn()} />);
 
+    await waitFor(() => expect(fetchFilterOptions).toHaveBeenCalled());
     expect(EVENTS_CHIP_SCROLL_STYLE.flexShrink).toBe(0);
     expect(screen.getByTestId('events-filter-chips')).toBeTruthy();
     expect(screen.getByTestId('chip-membership')).toBeTruthy();

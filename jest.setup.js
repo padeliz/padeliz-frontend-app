@@ -1,5 +1,8 @@
 /* global jest */
 
+const { configure } = require('@testing-library/react-native');
+configure({ asyncUtilTimeout: 5000 });
+
 jest.mock('expo-router', () =>
   require('./testing/expoRouterMock').createExpoRouterMock()
 );

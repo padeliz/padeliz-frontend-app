@@ -12,7 +12,7 @@ beforeEach(() => jest.clearAllMocks());
 describe('discovery services', () => {
   it('searchPlayers GETs search-players with the trimmed query', async () => {
     const results = [
-      { id_player: 5, name: 'Ana', email_masked: null, phone_masked: null, avatar_url: null },
+      { id_user: 5, name: 'Ana', email_masked: null, phone_masked: null, avatar_url: null },
     ];
     mockGet.mockResolvedValue(results);
 
@@ -25,7 +25,7 @@ describe('discovery services', () => {
 
   it('replaceFriends PUTs rows including phone', async () => {
     mockRequest.mockResolvedValue(undefined);
-    const friends = [{ friend_player_id: null, full_name: null, email: null, phone: '+40712000009' }];
+    const friends = [{ friend_player_user_id: null, full_name: null, email: null, phone: '+40712000009' }];
 
     await replaceFriends(friends);
     expect(mockRequest).toHaveBeenCalledWith('/app/my/discovery/friends', {

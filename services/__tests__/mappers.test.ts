@@ -5,15 +5,13 @@ import {
   eventPriceLabel,
   eventToCard,
   eventToDetails,
+  formatCompactDateRange,
   formatDateShort,
+  formatLongDateRange,
+  primaryCover,
   registrationToEventStatus,
 } from '@/services/mappers';
-
-describe('formatDateShort', () => {
-  it('formats YYYY-MM-DD as day short-month year', () => {
-    expect(formatDateShort('2026-10-24')).toBe('24 Oct 2026');
-  });
-});
+import { productDateTimeToDate } from '@/services/dateRange';
 import type { RegistrationPaymentStatus } from '@/types/api';
 import {
   DIVISION_ID,
@@ -21,6 +19,38 @@ import {
   makeRegistration,
   makeRegistrationWithStatus,
 } from '@/testing/fixtures';
+
+function unixOn(ymd: string, time: string): number {
+  return Math.floor(productDateTimeToDate(ymd, time).getTime() / 1000);
+}
+
+describe('formatDateShort', () => {
+  it('formats YYYY-MM-DD as day short-month year', () => {
+    expect(formatDateShort('2026-10-24')).toBe('24 Oct 2026');
+  });
+});
+
+describe('compact / long multi-day ranges', () => {
+  it('formats same month+year compact', () => {
+    expect(formatCompactDateRange('2026-10-11', '2026-10-12')).toBe('11-12 Oct 2026');
+  });
+
+  it('formats different month same year compact', () => {
+    expect(formatCompactDateRange('2026-10-28', '2026-11-02')).toBe('28 Oct - 2 Nov');
+  });
+
+  it('formats different year compact', () => {
+    expect(formatCompactDateRange('2026-12-28', '2027-01-02')).toBe(
+      '28 Dec 2026 - 2 Jan 2027'
+    );
+  });
+
+  it('formats long hero range', () => {
+    expect(formatLongDateRange('2026-10-11', '2026-10-12')).toBe(
+      '11 October 2026 - 12 October 2026'
+    );
+  });
+});
 
 describe('divisionEntryFee / eventPriceLabel', () => {
   it('reads fees from divisions and formats a range', () => {
@@ -39,8 +69,9 @@ describe('divisionEntryFee / eventPriceLabel', () => {
           division_id: 5,
           players_limit: 8,
           entry_fee: 50,
-          playing_start_time: null,
-          playing_end_time: null,
+          check_in_at: null,
+          playing_starts_at: unixOn('2099-06-15', '11:00:00'),
+          playing_ends_at: unixOn('2099-06-15', '14:00:00'),
         },
       ],
     });
@@ -96,8 +127,9 @@ describe('eventDivisionOptions', () => {
           division_title: null,
           players_limit: 8,
           entry_fee: 55,
-          playing_start_time: null,
-          playing_end_time: null,
+          check_in_at: null,
+          playing_starts_at: unixOn('2099-06-15', '11:00:00'),
+          playing_ends_at: unixOn('2099-06-15', '14:00:00'),
           division: { id_division: 5, name: 'Open' },
         },
       ],
@@ -106,7 +138,7 @@ describe('eventDivisionOptions', () => {
     const [only] = eventDivisionOptions(event);
     expect(only.name).toBe('Open');
     expect(only.price).toBe(55);
-    expect(only.description).toBe('Up to 8 players');
+    expect(only.description).toBe('Playing 11:00 - 14:00');
   });
 
   it('returns nothing when the event has no divisions', () => {
@@ -127,6 +159,8 @@ describe('eventToCard / eventToDetails', () => {
 
     const card = eventToCard(event);
     expect(card.coverImage).toEqual({ uri: 'https://example.com/cover.png' });
+    expect(card.coverAspectRatio).toBe(1.5);
+    expect(card.date).toBe('15 June 2099');
     expect(card.badges).toEqual([
       { key: 'new', label: 'New' },
       { key: 'lottery_winner', label: 'Lottery Winner' },
@@ -134,16 +168,22 @@ describe('eventToCard / eventToDetails', () => {
 
     const details = eventToDetails(event);
     expect(details.eventImage).toEqual({ uri: 'https://example.com/cover.png' });
+    expect(details.coverAspectRatio).toBe(1.5);
+    expect(details.date).toBe('15 June 2099');
+    expect(details.dateShort).toBe('15 Jun 2099');
+    expect(details.dateModalLines).toEqual([
+      expect.stringMatching(/^15 June 2099 · /),
+    ]);
     expect(details.eventDescription).toBe('<p>Join us for a day of padel.</p>');
     expect(details.organizerName).toBe('Tour Org');
     expect(details.organizerImage).toEqual({ uri: 'https://example.com/org.png' });
     expect(details.badges).toEqual(card.badges);
-    expect((details as { organizerTitle?: string }).organizerTitle).toBeUndefined();
   });
 
   it('maps null cover and null organizer without fallbacks', () => {
     const event = makeEvent({
       cover_url: null,
+      cover_images: [],
       organizer: null,
       organizer_id: null,
       description: undefined,
@@ -157,14 +197,33 @@ describe('eventToCard / eventToDetails', () => {
     expect(details.organizerName).toBeNull();
     expect(details.organizerImage).toBeNull();
     expect(details.eventDescription).toBe('');
+    expect(primaryCover(event)).toBeNull();
+  });
+
+  it('formats multi-day hero, info box, and modal lines', () => {
+    const event = makeEvent({
+      event_starts_at: unixOn('2026-10-11', '10:00:00'),
+      event_ends_at: unixOn('2026-10-12', '18:00:00'),
+      event_nr_of_days: 2,
+    });
+    const details = eventToDetails(event);
+    expect(details.date).toBe('11 October 2026 - 12 October 2026');
+    expect(details.dateShort).toBe('11-12 Oct 2026');
+    expect(details.weekday).toBe('');
+    expect(details.dateModalLines).toHaveLength(2);
+    expect(details.dateModalLines[0]).toMatch(/^11 October 2026 · /);
+    expect(details.dateModalLines[1]).toMatch(/^12 October 2026 · /);
+
+    const card = eventToCard(event);
+    expect(card.date).toBe('11-12 Oct 2026');
   });
 });
 
 describe('buildSchedule', () => {
-  it('includes Check-in and stacked unique Playing windows, never Closing', () => {
+  it('groups by check-in+playing, omits null check-in, never Closing', () => {
+    const checkIn = unixOn('2099-06-15', '10:30:00');
     const event = makeEvent({
-      arriving_time: '10:30:00',
-      closing_time: '20:00:00',
+      event_nr_of_days: 1,
       event_divisions: [
         {
           id_event_division: 1,
@@ -172,8 +231,9 @@ describe('buildSchedule', () => {
           division_id: 2,
           players_limit: 8,
           entry_fee: 45,
-          playing_start_time: '14:30:00',
-          playing_end_time: '18:00:00',
+          check_in_at: checkIn,
+          playing_starts_at: unixOn('2099-06-15', '14:30:00'),
+          playing_ends_at: unixOn('2099-06-15', '18:00:00'),
         },
         {
           id_event_division: 2,
@@ -181,8 +241,9 @@ describe('buildSchedule', () => {
           division_id: 3,
           players_limit: 8,
           entry_fee: 50,
-          playing_start_time: '11:00:00',
-          playing_end_time: '14:00:00',
+          check_in_at: checkIn,
+          playing_starts_at: unixOn('2099-06-15', '11:00:00'),
+          playing_ends_at: unixOn('2099-06-15', '14:00:00'),
         },
         {
           id_event_division: 3,
@@ -190,19 +251,69 @@ describe('buildSchedule', () => {
           division_id: 4,
           players_limit: 8,
           entry_fee: 55,
-          playing_start_time: '11:00:00',
-          playing_end_time: '14:00:00',
+          check_in_at: checkIn,
+          playing_starts_at: unixOn('2099-06-15', '11:00:00'),
+          playing_ends_at: unixOn('2099-06-15', '14:00:00'),
+        },
+        {
+          id_event_division: 4,
+          event_id: 42,
+          division_id: 5,
+          players_limit: 8,
+          entry_fee: 40,
+          check_in_at: null,
+          playing_starts_at: unixOn('2099-06-15', '19:00:00'),
+          playing_ends_at: unixOn('2099-06-15', '21:00:00'),
         },
       ],
     });
 
     expect(buildSchedule(event)).toEqual([
-      { label: 'Check-in', time: '10:30' },
-      { label: 'Playing', time: '11:00 - 14:00' },
-      { label: '', time: '14:30 - 18:00' },
+      {
+        items: [
+          { label: 'Check-in', time: '10:30' },
+          { label: 'Playing', time: '11:00 - 14:00' },
+        ],
+      },
+      {
+        items: [
+          { label: 'Check-in', time: '10:30' },
+          { label: 'Playing', time: '14:30 - 18:00' },
+        ],
+      },
+      {
+        items: [{ label: 'Playing', time: '19:00 - 21:00' }],
+      },
     ]);
-    expect(buildSchedule(event).filter((i) => i.label === 'Playing')).toHaveLength(1);
-    expect(buildSchedule(event).some((i) => i.label === 'Closing')).toBe(false);
+  });
+
+  it('formats multi-day schedule with dates and both ends when playing spans days', () => {
+    const event = makeEvent({
+      event_starts_at: unixOn('2026-10-11', '10:00:00'),
+      event_ends_at: unixOn('2026-10-12', '18:00:00'),
+      event_nr_of_days: 2,
+      event_divisions: [
+        {
+          id_event_division: 1,
+          event_id: 42,
+          division_id: 2,
+          players_limit: 8,
+          entry_fee: 45,
+          check_in_at: unixOn('2026-10-11', '10:00:00'),
+          playing_starts_at: unixOn('2026-10-11', '22:00:00'),
+          playing_ends_at: unixOn('2026-10-12', '02:00:00'),
+        },
+      ],
+    });
+
+    expect(buildSchedule(event)).toEqual([
+      {
+        items: [
+          { label: 'Check-in', time: '11 Oct, 10:00' },
+          { label: 'Playing', time: '11 Oct, 22:00 - 12 Oct, 02:00' },
+        ],
+      },
+    ]);
   });
 });
 

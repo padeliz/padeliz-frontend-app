@@ -42,10 +42,29 @@ jest.mock('@/services/referral', () => ({
 
 jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction } as any);
 
+const NOW = new Date('2026-06-10T12:00:00.000Z');
+const FUTURE_STARTS = Math.floor(Date.parse('2099-06-15T08:00:00.000Z') / 1000);
+const FUTURE_ENDS = Math.floor(Date.parse('2099-06-15T16:00:00.000Z') / 1000);
+const PAST_STARTS = Math.floor(Date.parse('2020-01-01T08:00:00.000Z') / 1000);
+const PAST_ENDS = Math.floor(Date.parse('2020-01-01T16:00:00.000Z') / 1000);
+const OPEN_REG = Math.floor(Date.parse('2099-06-01T00:00:00.000Z') / 1000);
+
+const defaultProps = {
+  visible: true as const,
+  eventId: 42,
+  eventName: 'Tour',
+  eventStartsAt: FUTURE_STARTS,
+  eventEndsAt: FUTURE_ENDS,
+  registrationAllowedUntil: OPEN_REG,
+  onClose: jest.fn(),
+  now: NOW,
+};
+
 describe('ShareReferralModal tabs', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = mockAuthUser;
+    defaultProps.onClose = jest.fn();
     (fetchReferralCodes as jest.Mock).mockResolvedValue({
       remaining_slots: 6,
       codes: [],
@@ -53,9 +72,7 @@ describe('ShareReferralModal tabs', () => {
   });
 
   it('shows Share event and Share referral tabs without plain URL', async () => {
-    render(
-      <ShareReferralModal visible eventId={42} eventName="Tour" onClose={jest.fn()} />
-    );
+    render(<ShareReferralModal {...defaultProps} />);
 
     expect(screen.getByTestId('share-tab-event')).toBeTruthy();
     expect(screen.getByTestId('share-tab-referral')).toBeTruthy();
@@ -66,9 +83,7 @@ describe('ShareReferralModal tabs', () => {
   });
 
   it('puts Add invitee and Create code on the same row', async () => {
-    render(
-      <ShareReferralModal visible eventId={42} eventName="Tour" onClose={jest.fn()} />
-    );
+    render(<ShareReferralModal {...defaultProps} />);
     fireEvent.press(screen.getByTestId('share-tab-referral'));
     await waitFor(() => expect(fetchReferralCodes).toHaveBeenCalled());
 
@@ -80,9 +95,7 @@ describe('ShareReferralModal tabs', () => {
 
   it('shows LoginOptions on referral tab for guests', () => {
     mockCurrentUser = null;
-    render(
-      <ShareReferralModal visible eventId={42} eventName="Tour" onClose={jest.fn()} />
-    );
+    render(<ShareReferralModal {...defaultProps} />);
 
     fireEvent.press(screen.getByTestId('share-tab-referral'));
     expect(screen.getByTestId('share-referral-guest')).toBeTruthy();
@@ -93,9 +106,7 @@ describe('ShareReferralModal tabs', () => {
   });
 
   it('uses exact referral subtitle when authenticated', async () => {
-    render(
-      <ShareReferralModal visible eventId={42} eventName="Tour" onClose={jest.fn()} />
-    );
+    render(<ShareReferralModal {...defaultProps} />);
     fireEvent.press(screen.getByTestId('share-tab-referral'));
 
     await waitFor(() => expect(fetchReferralCodes).toHaveBeenCalled());
@@ -116,9 +127,7 @@ describe('ShareReferralModal tabs', () => {
       },
     });
 
-    render(
-      <ShareReferralModal visible eventId={42} eventName="Tour" onClose={jest.fn()} />
-    );
+    render(<ShareReferralModal {...defaultProps} />);
     fireEvent.press(screen.getByTestId('share-tab-referral'));
 
     await waitFor(() => expect(fetchReferralCodes).toHaveBeenCalled());
@@ -146,13 +155,7 @@ describe('ShareReferralModal tabs', () => {
     });
 
     render(
-      <ShareReferralModal
-        visible
-        eventId={42}
-        eventName="Tour"
-        eventSlug="tour-org-tour"
-        onClose={jest.fn()}
-      />
+      <ShareReferralModal {...defaultProps} eventSlug="tour-org-tour" />
     );
     fireEvent.press(screen.getByTestId('share-tab-referral'));
 
@@ -178,9 +181,7 @@ describe('ShareReferralModal tabs', () => {
     );
 
     const onClose = jest.fn();
-    render(
-      <ShareReferralModal visible eventId={42} eventName="Tour" onClose={onClose} />
-    );
+    render(<ShareReferralModal {...defaultProps} onClose={onClose} />);
     fireEvent.press(screen.getByTestId('share-tab-referral'));
     await waitFor(() => expect(fetchReferralCodes).toHaveBeenCalled());
 
@@ -202,6 +203,101 @@ describe('ShareReferralModal tabs', () => {
         invitees: [{ email: 'a@b.com', phone: null }],
       },
     });
+
+    await waitFor(() => expect(screen.getByText('ABC12345')).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.queryByTestId('create-referral-code-loading')).toBeNull()
+    );
+  });
+
+  describe('past / cutoffs', () => {
+    it('hides Share referral when calendar-Past and zero codes', async () => {
+      render(
+        <ShareReferralModal
+          {...defaultProps}
+          eventStartsAt={PAST_STARTS}
+          eventEndsAt={PAST_ENDS}
+        />
+      );
+      await waitFor(() => expect(fetchReferralCodes).toHaveBeenCalled());
+      expect(screen.queryByTestId('share-tab-referral')).toBeNull();
+      expect(screen.getByTestId('share-tab-event')).toBeTruthy();
+    });
+
+    it('is read-only when Past and codes exist', async () => {
+      (fetchReferralCodes as jest.Mock).mockResolvedValue({
+        remaining_slots: 3,
+        codes: [
+          {
+            id_referral_code: 11,
+            code: 'ABC12345',
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            revoked_at: null,
+            invitees: [],
+          },
+        ],
+      });
+
+      render(
+        <ShareReferralModal
+          {...defaultProps}
+          eventStartsAt={PAST_STARTS}
+          eventEndsAt={PAST_ENDS}
+        />
+      );
+      await waitFor(() => expect(screen.getByTestId('share-tab-referral')).toBeTruthy());
+      fireEvent.press(screen.getByTestId('share-tab-referral'));
+      await waitFor(() => expect(screen.getByText('ABC12345')).toBeTruthy());
+
+      expect(screen.queryByTestId('create-referral-code')).toBeNull();
+      expect(screen.queryByTestId('add-invitee')).toBeNull();
+      expect(screen.queryByTestId('revoke-referral-11')).toBeNull();
+      expect(screen.getByTestId('copy-referral-11')).toBeTruthy();
+      expect(screen.getByTestId('share-referral-11')).toBeTruthy();
+    });
+
+    it('disables create when now >= registration_allowed_until', async () => {
+      const closedUntil = Math.floor(NOW.getTime() / 1000) - 60;
+      render(
+        <ShareReferralModal
+          {...defaultProps}
+          registrationAllowedUntil={closedUntil}
+        />
+      );
+      fireEvent.press(screen.getByTestId('share-tab-referral'));
+      await waitFor(() => expect(fetchReferralCodes).toHaveBeenCalled());
+      expect(screen.getByTestId('referral-create-closed')).toBeTruthy();
+      expect(screen.queryByTestId('create-referral-code')).toBeNull();
+    });
+
+    it('hides revoke when now >= event_starts_at', async () => {
+      const started = Math.floor(NOW.getTime() / 1000) - 60;
+      const endsLater = Math.floor(NOW.getTime() / 1000) + 86_400;
+      (fetchReferralCodes as jest.Mock).mockResolvedValue({
+        remaining_slots: 5,
+        codes: [
+          {
+            id_referral_code: 11,
+            code: 'ABC12345',
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            revoked_at: null,
+            invitees: [],
+          },
+        ],
+      });
+
+      render(
+        <ShareReferralModal
+          {...defaultProps}
+          eventStartsAt={started}
+          eventEndsAt={endsLater}
+        />
+      );
+      fireEvent.press(screen.getByTestId('share-tab-referral'));
+      await waitFor(() => expect(screen.getByText('ABC12345')).toBeTruthy());
+      expect(screen.getByTestId('copy-referral-11')).toBeTruthy();
+      expect(screen.queryByTestId('revoke-referral-11')).toBeNull();
+    });
   });
 
   describe('revoke', () => {
@@ -215,9 +311,7 @@ describe('ShareReferralModal tabs', () => {
     };
 
     const renderReferralTab = async () => {
-      render(
-        <ShareReferralModal visible eventId={42} eventName="Tour" onClose={jest.fn()} />
-      );
+      render(<ShareReferralModal {...defaultProps} />);
       fireEvent.press(screen.getByTestId('share-tab-referral'));
       await waitFor(() => expect(screen.getByText('ABC12345')).toBeTruthy());
     };

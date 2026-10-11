@@ -19,7 +19,7 @@ let testClient: QueryClient | null = null;
 beforeEach(() => {
   jest.clearAllMocks();
   mockSearch.mockResolvedValue([
-    { id_player: 5, name: 'Ana Pop', email_masked: null, phone_masked: null, avatar_url: null },
+    { id_user: 5, name: 'Ana Pop', email_masked: null, phone_masked: null, avatar_url: null },
   ]);
 });
 afterEach(async () => {

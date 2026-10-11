@@ -12,18 +12,31 @@ export type ScheduleItem = {
     time: string;
 };
 
+/** One Info-tab schedule card (unique check-in + playing window). */
+export type ScheduleGroup = {
+    items: ScheduleItem[];
+};
+
 export type EventDetails = {
     eventImage: ImageSourcePropType | null;
+    /** Width/height of the primary cover when known; null → no temp height. */
+    coverAspectRatio: number | null;
     eventName: string;
+    /** Hero date: long single day or long multi-day range. */
     date: string;
-    /** Short date for compact Info cards, e.g. "24 Oct 2026". */
+    /** Short/compact date for the Info date box. */
     dateShort: string;
-    /** Weekday label for the event date, e.g. "Saturday". */
+    /** Weekday for single-day events; empty when multi-day (box omits it). */
     weekday: string;
+    /**
+     * Info date modal lines. Single-day: one `{date} · {weekday}` line;
+     * multi-day: two `{D} {Month} {YYYY} · {Weekday}` lines.
+     */
+    dateModalLines: string[];
     location: string;
     locationAddress: string;
     price: string;
-    schedule: ScheduleItem[];
+    schedule: ScheduleGroup[];
     /** HTML description from the API (detail/show only). */
     eventDescription: string;
     organizerImage: ImageSourcePropType | null;
@@ -48,6 +61,8 @@ export type EventCardData = {
     location: string;
     date: string;
     coverImage: ImageSourcePropType | null;
+    /** Width/height of the primary cover when known; null → no temp height. */
+    coverAspectRatio: number | null;
     status: EventStatus;
     timing: EventTiming;
     badges?: EventBadge[];
@@ -65,8 +80,8 @@ export type DivisionDetails = {
     num_spots: number;
     /** Hex color from the division catalog when present. */
     color?: string | null;
-    /** Playing window start "HH:MM" for grouping on the division step. */
+    /** Playing window start label for grouping on the division step. */
     playingStart?: string;
-    /** Playing window end "HH:MM" for grouping on the division step. */
+    /** Playing window end label for grouping on the division step. */
     playingEnd?: string;
 };

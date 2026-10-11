@@ -95,7 +95,7 @@ export default function DiscoveryScreen() {
       setRows(
         summary.friends.slice(0, MAX_FRIENDS).map((f) =>
           newFriendRow({
-            friend_player_id: f.friend_player_id,
+            friend_player_user_id: f.friend_player_user_id,
             full_name: f.full_name ?? f.friend_name ?? '',
             email: f.email ?? '',
             phone: f.phone ?? '',
@@ -112,7 +112,7 @@ export default function DiscoveryScreen() {
   );
   const { data: suggestions } = useSuggestedFriends(showFriends);
   const unusedSuggestions = (suggestions ?? []).filter(
-    (s) => !rows.some((r) => r.friend_player_id === s.friend_player_id)
+    (s) => !rows.some((r) => r.friend_player_user_id === s.friend_player_user_id)
   );
 
   const [searchText, setSearchText] = useState('');
@@ -120,7 +120,7 @@ export default function DiscoveryScreen() {
   const searchActive = canSearch && searchText.trim().length >= SEARCH_MIN_LENGTH;
   const { data: searchData, loading: searchLoading } = usePlayerSearch(searchText, canSearch);
   const searchResults = (searchData ?? []).filter(
-    (p) => !rows.some((r) => r.friend_player_id === p.id_player)
+    (p) => !rows.some((r) => r.friend_player_user_id === p.id_user)
   );
 
   const toggleSource = (id: number) =>
@@ -207,10 +207,10 @@ export default function DiscoveryScreen() {
                 <View style={styles.suggestions} testID="friend-suggestions">
                   {unusedSuggestions.map((s) => (
                     <Pressable
-                      key={s.friend_player_id}
+                      key={s.friend_player_user_id}
                       style={styles.chip}
                       onPress={() => addRow(friendRowFromSuggestion(s))}
-                      testID={`suggest-friend-${s.friend_player_id}`}
+                      testID={`suggest-friend-${s.friend_player_user_id}`}
                     >
                       <Text style={styles.chipText}>{s.full_name}</Text>
                     </Pressable>
@@ -241,10 +241,10 @@ export default function DiscoveryScreen() {
                   {searchActive
                     ? searchResults.map((p) => (
                         <Pressable
-                          key={p.id_player}
+                          key={p.id_user}
                           style={styles.result}
                           onPress={() => pickSearchResult(p)}
-                          testID={`search-result-${p.id_player}`}
+                          testID={`search-result-${p.id_user}`}
                         >
                           <Text style={styles.resultName}>{p.name}</Text>
                           {p.email_masked || p.phone_masked ? (
@@ -265,7 +265,7 @@ export default function DiscoveryScreen() {
                     style={styles.input}
                     value={row.full_name}
                     onChangeText={(text) =>
-                      updateRow(row.key, { full_name: text, friend_player_id: null })
+                      updateRow(row.key, { full_name: text, friend_player_user_id: null })
                     }
                     placeholder="Friend's name"
                     placeholderTextColor={Colors.INACTIVE}

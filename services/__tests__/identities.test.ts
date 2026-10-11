@@ -10,7 +10,7 @@ jest.mock('@/services/apiClient', () => ({
 
 describe('setAvatarPrimaryIdentity', () => {
   it('POSTs to the avatar-primary endpoint and returns the identity', async () => {
-    const identity = makeGoogleIdentity({ id_identity: 12, is_avatar_primary: true });
+    const identity = makeGoogleIdentity({ id_user_identity: 12, is_avatar_primary: true });
     mockPost.mockResolvedValue(identity);
 
     await expect(setAvatarPrimaryIdentity(12)).resolves.toEqual(identity);

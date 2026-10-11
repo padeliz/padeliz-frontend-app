@@ -30,6 +30,13 @@ function renderAccount() {
   return result;
 }
 
+/** Logged-in AccountScreen: wait until history fetch settles (avoids act leaks). */
+async function renderAccountReady() {
+  const result = renderAccount();
+  await waitFor(() => expect(screen.getByTestId('event-history-list')).toBeTruthy());
+  return result;
+}
+
 jest.mock('@/context/auth', () => ({
   useAuth: () => ({
     get user() {
@@ -53,7 +60,7 @@ jest.mock('@/services/confirm', () => ({
 }));
 
 const mockRefetchIdentities = jest.fn();
-let mockIdentities = [makeGoogleIdentity({ id_identity: 10, email: 'linked@example.com' })];
+let mockIdentities = [makeGoogleIdentity({ id_user_identity: 10, email: 'linked@example.com' })];
 let mockIdentitiesLoading = false;
 let mockUnlinkPending = false;
 const mockUnlinkMutateAsync = jest.fn(async () => undefined);
@@ -130,7 +137,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAuthLoading = false;
   mockUser = mapPlayerToUser(makePlayer());
-  mockIdentities = [makeGoogleIdentity({ id_identity: 10, email: 'linked@example.com' })];
+  mockIdentities = [makeGoogleIdentity({ id_user_identity: 10, email: 'linked@example.com' })];
   mockIdentitiesLoading = false;
   mockUnlinkPending = false;
   mockAvatarPending = false;
@@ -163,7 +170,7 @@ describe('AccountScreen', () => {
         },
       ],
     });
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
 
     await waitFor(() => expect(screen.getByText('My Participations')).toBeTruthy());
     expect(screen.queryByText('Event History')).toBeNull();
@@ -174,7 +181,7 @@ describe('AccountScreen', () => {
   });
 
   it('lists linked Google identities without primary badge', async () => {
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     expect(screen.getByTestId('google-identities-list')).toBeTruthy();
     expect(screen.getByText('linked@example.com')).toBeTruthy();
     expect(screen.queryByText('Primary Account')).toBeNull();
@@ -182,7 +189,7 @@ describe('AccountScreen', () => {
   });
 
   it('shows locked personal info fields', async () => {
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     expect(screen.getByText('Full Name')).toBeTruthy();
     expect(screen.getByText('Email')).toBeTruthy();
     expect(screen.getByText('Phone Number')).toBeTruthy();
@@ -194,7 +201,7 @@ describe('AccountScreen', () => {
   });
 
   it('hides Unlink when the identity is the last for that provider', async () => {
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('google-identity-10'));
     expect(screen.queryByText('Unlink')).toBeNull();
     expect(screen.getByText('Close')).toBeTruthy();
@@ -203,10 +210,10 @@ describe('AccountScreen', () => {
 
   it('shows Unlink when multiple Google identities exist', async () => {
     mockIdentities = [
-      makeGoogleIdentity({ id_identity: 10, email: 'linked@example.com' }),
-      makeGoogleIdentity({ id_identity: 11, email: 'second@example.com' }),
+      makeGoogleIdentity({ id_user_identity: 10, email: 'linked@example.com' }),
+      makeGoogleIdentity({ id_user_identity: 11, email: 'second@example.com' }),
     ];
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('google-identity-10'));
     expect(screen.getByText('Unlink')).toBeTruthy();
     await disposeTestQueryClient(client);
@@ -214,13 +221,13 @@ describe('AccountScreen', () => {
 
   it('surfaces unlink errors in the identity modal', async () => {
     mockIdentities = [
-      makeGoogleIdentity({ id_identity: 10, email: 'linked@example.com' }),
-      makeGoogleIdentity({ id_identity: 11, email: 'second@example.com' }),
+      makeGoogleIdentity({ id_user_identity: 10, email: 'linked@example.com' }),
+      makeGoogleIdentity({ id_user_identity: 11, email: 'second@example.com' }),
     ];
     mockUnlinkMutateAsync.mockRejectedValueOnce(
       new ApiError(422, 'Cannot unlink the last Google identity')
     );
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('google-identity-10'));
     fireEvent.press(screen.getByText('Unlink'));
 
@@ -233,11 +240,11 @@ describe('AccountScreen', () => {
 
   it('shows on-button loading and disables close while unlink is pending', async () => {
     mockIdentities = [
-      makeGoogleIdentity({ id_identity: 10, email: 'linked@example.com' }),
-      makeGoogleIdentity({ id_identity: 11, email: 'second@example.com' }),
+      makeGoogleIdentity({ id_user_identity: 10, email: 'linked@example.com' }),
+      makeGoogleIdentity({ id_user_identity: 11, email: 'second@example.com' }),
     ];
     mockUnlinkPending = true;
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('google-identity-10'));
 
     expect(screen.getByTestId('identity-unlink-loading')).toBeTruthy();
@@ -247,7 +254,7 @@ describe('AccountScreen', () => {
   });
 
   it('links another Google account via obtainGoogleIdToken', async () => {
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('link-google-account'));
 
     await waitFor(() => expect(mockObtainGoogleIdToken).toHaveBeenCalled());
@@ -261,7 +268,7 @@ describe('AccountScreen', () => {
     mockLinkGoogleIdentity.mockRejectedValueOnce(
       new ApiError(409, 'Identity already linked to another player')
     );
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('link-google-account'));
 
     await waitFor(() =>
@@ -274,7 +281,7 @@ describe('AccountScreen', () => {
   });
 
   it('confirms before sign out', async () => {
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('account-sign-out'));
 
     await waitFor(() => expect(confirmAsync).toHaveBeenCalled());
@@ -284,7 +291,7 @@ describe('AccountScreen', () => {
 
   it('does not sign out when confirmation is cancelled', async () => {
     (confirmAsync as jest.Mock).mockResolvedValueOnce(false);
-    const { client } = renderAccount();
+    const { client } = await renderAccountReady();
     fireEvent.press(screen.getByTestId('account-sign-out'));
 
     await waitFor(() => expect(confirmAsync).toHaveBeenCalled());
@@ -294,7 +301,7 @@ describe('AccountScreen', () => {
 
   describe('player level', () => {
     it('shows the Assess my level CTA when the player has no level', async () => {
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
 
       expect(screen.queryByTestId('account-level-band')).toBeNull();
       fireEvent.press(screen.getByTestId('account-assess-level'));
@@ -305,7 +312,7 @@ describe('AccountScreen', () => {
 
     it('shows the band name instead of the CTA when a level exists', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Advanced', level: '4.50' });
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
 
       expect(screen.getByTestId('account-level-band')).toBeTruthy();
       expect(screen.getByText('Advanced')).toBeTruthy();
@@ -315,7 +322,7 @@ describe('AccountScreen', () => {
 
     it('opens a centered modal with band, numeric level and Update level assessment', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Advanced', level: '4.50' });
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
 
       expect(screen.queryByTestId('level-modal')).toBeNull();
       fireEvent.press(screen.getByTestId('account-level-band'));
@@ -335,7 +342,7 @@ describe('AccountScreen', () => {
     it('keeps the modal open with a loader on the CTA while the API is pending', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Division 3 Mid', level: '3.50' });
       mockLevelStarting = true;
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
 
       expect(screen.getByTestId('level-modal-update-loading')).toBeTruthy();
@@ -353,7 +360,7 @@ describe('AccountScreen', () => {
       mockStartLevelFlow.mockImplementationOnce(
         () => new Promise<boolean>((resolve) => (resolveStart = resolve))
       );
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
       fireEvent.press(screen.getByTestId('level-modal-update'));
 
@@ -369,7 +376,7 @@ describe('AccountScreen', () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Division 3 Mid', level: '3.50' });
       mockStartLevelFlow.mockResolvedValueOnce(false);
       mockLevelFlowError = new Error('boom');
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
       fireEvent.press(screen.getByTestId('level-modal-update'));
 
@@ -382,7 +389,7 @@ describe('AccountScreen', () => {
     it('Close aborts the pending start without navigating', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Division 3 Mid', level: '3.50' });
       mockLevelStarting = true;
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
       fireEvent.press(screen.getByTestId('level-modal-close'));
 
@@ -395,7 +402,7 @@ describe('AccountScreen', () => {
     it('backdrop press aborts the pending start without navigating', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Division 3 Mid', level: '3.50' });
       mockLevelStarting = true;
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
       fireEvent.press(screen.getByTestId('level-modal-backdrop'));
 
@@ -408,7 +415,7 @@ describe('AccountScreen', () => {
     it('renders the 3-segment Low/Mid/High scale under the band name', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Division 3 Mid', level: '3.50' });
       mockLevels = [...divisionLevels(4), ...divisionLevels(3), ...divisionLevels(2)];
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
 
       expect(screen.getByTestId('level-band-scale')).toBeTruthy();
@@ -422,7 +429,7 @@ describe('AccountScreen', () => {
     it('omits the scale when levels are unavailable', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Division 3 Mid', level: '3.50' });
       mockLevels = null;
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-level-band'));
 
       expect(screen.queryByTestId('level-band-scale')).toBeNull();
@@ -430,7 +437,7 @@ describe('AccountScreen', () => {
     });
 
     it('opens the student proof submit flow', async () => {
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('account-student-proof'));
 
       expect(mockPush).toHaveBeenCalledWith({ pathname: '/student-proof', params: {} });
@@ -449,7 +456,7 @@ describe('AccountScreen', () => {
       mockUser = mapPlayerToUser(
         makePlayer({ avatar_url: 'https://example.com/google.png' })
       );
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
 
       expect(avatarUris()).toContain('https://example.com/google.png');
       await disposeTestQueryClient(client);
@@ -465,7 +472,7 @@ describe('AccountScreen', () => {
           ],
         })
       );
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
 
       expect(avatarUris()).not.toContain('https://example.com/pdf.png');
       await disposeTestQueryClient(client);
@@ -474,7 +481,7 @@ describe('AccountScreen', () => {
 
   describe('layout and link loader', () => {
     it('uses the same title-to-content gap for Linked Google Accounts as Personal Information', async () => {
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       const list = StyleSheet.flatten(
         screen.getByTestId('google-identities-list').props.style
       );
@@ -487,7 +494,7 @@ describe('AccountScreen', () => {
       mockObtainGoogleIdToken.mockImplementationOnce(
         () => new Promise<string>((resolve) => (resolveToken = resolve))
       );
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       await waitFor(() => expect(screen.getByTestId('event-history-list')).toBeTruthy());
       expect(screen.UNSAFE_queryAllByType(ActivityIndicator)).toHaveLength(0);
       fireEvent.press(screen.getByTestId('link-google-account'));
@@ -512,14 +519,14 @@ describe('AccountScreen', () => {
   describe('primary avatar UI', () => {
     it('shows a Primary avatar badge only on the primary identity row', async () => {
       mockIdentities = [
-        makeGoogleIdentity({ id_identity: 10, is_avatar_primary: true }),
+        makeGoogleIdentity({ id_user_identity: 10, is_avatar_primary: true }),
         makeGoogleIdentity({
-          id_identity: 11,
+          id_user_identity: 11,
           email: 'second@example.com',
           is_avatar_primary: false,
         }),
       ];
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
 
       expect(screen.getByTestId('google-identity-primary-10')).toBeTruthy();
       expect(screen.queryByTestId('google-identity-primary-11')).toBeNull();
@@ -527,8 +534,8 @@ describe('AccountScreen', () => {
     });
 
     it('shows "Primary avatar" in the modal for the primary identity', async () => {
-      mockIdentities = [makeGoogleIdentity({ id_identity: 10, is_avatar_primary: true })];
-      const { client } = renderAccount();
+      mockIdentities = [makeGoogleIdentity({ id_user_identity: 10, is_avatar_primary: true })];
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('google-identity-10'));
 
       expect(screen.getByTestId('identity-primary-avatar')).toBeTruthy();
@@ -537,8 +544,8 @@ describe('AccountScreen', () => {
     });
 
     it('offers Use as avatar (no badge) for a non-primary identity with an avatar URL', async () => {
-      mockIdentities = [makeGoogleIdentity({ id_identity: 11, is_avatar_primary: false })];
-      const { client } = renderAccount();
+      mockIdentities = [makeGoogleIdentity({ id_user_identity: 11, is_avatar_primary: false })];
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('google-identity-11'));
 
       expect(screen.getByTestId('identity-use-as-avatar')).toBeTruthy();
@@ -550,7 +557,7 @@ describe('AccountScreen', () => {
       mockUser = mapPlayerToUser(
         makePlayer({ avatar_url: 'https://example.com/broken.png' })
       );
-      const { client, rerender } = renderAccount();
+      const { client, rerender } = await renderAccountReady();
       const uris = () =>
         screen
           .UNSAFE_getAllByType(Image)
@@ -577,9 +584,9 @@ describe('AccountScreen', () => {
   describe('primary Google avatar picker', () => {
     it('hides Use as avatar when the identity is already primary', async () => {
       mockIdentities = [
-        makeGoogleIdentity({ id_identity: 10, is_avatar_primary: true }),
+        makeGoogleIdentity({ id_user_identity: 10, is_avatar_primary: true }),
       ];
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('google-identity-10'));
 
       expect(screen.queryByTestId('identity-use-as-avatar')).toBeNull();
@@ -588,9 +595,9 @@ describe('AccountScreen', () => {
 
     it('hides Use as avatar when the identity has no avatar', async () => {
       mockIdentities = [
-        makeGoogleIdentity({ id_identity: 10, avatar_url: null, is_avatar_primary: false }),
+        makeGoogleIdentity({ id_user_identity: 10, avatar_url: null, is_avatar_primary: false }),
       ];
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('google-identity-10'));
 
       expect(screen.queryByTestId('identity-use-as-avatar')).toBeNull();
@@ -599,15 +606,15 @@ describe('AccountScreen', () => {
 
     it('calls the API, refreshes the picture and closes the modal on success', async () => {
       mockIdentities = [
-        makeGoogleIdentity({ id_identity: 10, is_avatar_primary: true }),
+        makeGoogleIdentity({ id_user_identity: 10, is_avatar_primary: true }),
         makeGoogleIdentity({
-          id_identity: 11,
+          id_user_identity: 11,
           email: 'second@example.com',
           avatar_url: 'https://example.com/second.png',
           is_avatar_primary: false,
         }),
       ];
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('google-identity-11'));
       fireEvent.press(screen.getByTestId('identity-use-as-avatar'));
 
@@ -621,12 +628,12 @@ describe('AccountScreen', () => {
 
     it('shows the error and does not refresh when the API fails', async () => {
       mockIdentities = [
-        makeGoogleIdentity({ id_identity: 11, is_avatar_primary: false }),
+        makeGoogleIdentity({ id_user_identity: 11, is_avatar_primary: false }),
       ];
       mockAvatarMutateAsync.mockRejectedValueOnce(
         new ApiError(422, 'Only a Google identity with an avatar can be the primary avatar.')
       );
-      const { client } = renderAccount();
+      const { client } = await renderAccountReady();
       fireEvent.press(screen.getByTestId('google-identity-11'));
       fireEvent.press(screen.getByTestId('identity-use-as-avatar'));
 

@@ -122,7 +122,7 @@ describe('Discovery intercept screen', () => {
 
   it('sends the typed search text to the search hook and lists masked results', () => {
     mockSearchResults = [
-      { id_player: 31, name: 'Ioana Vasilescu', email_masked: 'i***@example.com', phone_masked: '+*********009', avatar_url: null },
+      { id_user: 31, name: 'Ioana Vasilescu', email_masked: 'i***@example.com', phone_masked: '+*********009', avatar_url: null },
     ];
     renderScreen();
     fireEvent.press(screen.getByText('Friends'));
@@ -135,7 +135,7 @@ describe('Discovery intercept screen', () => {
 
   it('does not list results for a too-short query', () => {
     mockSearchResults = [
-      { id_player: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
+      { id_user: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
     ];
     renderScreen();
     fireEvent.press(screen.getByText('Friends'));
@@ -144,9 +144,9 @@ describe('Discovery intercept screen', () => {
     expect(screen.queryByTestId('search-result-31')).toBeNull();
   });
 
-  it('picking a search result sets friend_player_id and name and is saved', async () => {
+  it('picking a search result sets friend_player_user_id and name and is saved', async () => {
     mockSearchResults = [
-      { id_player: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
+      { id_user: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
     ];
     renderScreen();
     fireEvent.press(screen.getByText('Friends'));
@@ -161,13 +161,13 @@ describe('Discovery intercept screen', () => {
     await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1));
     const vars = mockSave.mock.calls[0][0] as { friends: unknown[] };
     expect(vars.friends).toEqual([
-      { friend_player_id: 31, full_name: 'Ioana Vasilescu', email: null, phone: null },
+      { friend_player_user_id: 31, full_name: 'Ioana Vasilescu', email: null, phone: null },
     ]);
   });
 
   it('editing a picked friend name drops the player link', async () => {
     mockSearchResults = [
-      { id_player: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
+      { id_user: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
     ];
     renderScreen();
     fireEvent.press(screen.getByText('Friends'));
@@ -177,8 +177,8 @@ describe('Discovery intercept screen', () => {
     fireEvent.press(screen.getByTestId('discovery-submit'));
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1));
-    const vars = mockSave.mock.calls[0][0] as { friends: Array<{ friend_player_id: number | null }> };
-    expect(vars.friends[0].friend_player_id).toBeNull();
+    const vars = mockSave.mock.calls[0][0] as { friends: Array<{ friend_player_user_id: number | null }> };
+    expect(vars.friends[0].friend_player_user_id).toBeNull();
   });
 
   it('includes the phone field in the save payload', async () => {
@@ -201,7 +201,7 @@ describe('Discovery intercept screen', () => {
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1));
     expect((mockSave.mock.calls[0][0] as { friends: unknown[] }).friends).toEqual([
-      { friend_player_id: null, full_name: null, email: null, phone: '0712000009' },
+      { friend_player_user_id: null, full_name: null, email: null, phone: '0712000009' },
     ]);
   });
 
@@ -211,7 +211,7 @@ describe('Discovery intercept screen', () => {
       friends_selected: true,
       friends: [
         {
-          friend_player_id: null,
+          friend_player_user_id: null,
           full_name: 'Saved Friend',
           email: null,
           phone: '+40712000001',
@@ -224,7 +224,7 @@ describe('Discovery intercept screen', () => {
 
   it('hides search at the 3-friend cap and does not allow picking a 4th', () => {
     mockSearchResults = [
-      { id_player: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
+      { id_user: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
     ];
     renderScreen();
     fireEvent.press(screen.getByText('Friends'));
@@ -242,7 +242,7 @@ describe('Discovery intercept screen', () => {
 
   it('picking from search fills the last open slot (max 3)', () => {
     mockSearchResults = [
-      { id_player: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
+      { id_user: 31, name: 'Ioana Vasilescu', email_masked: null, phone_masked: null, avatar_url: null },
     ];
     renderScreen();
     fireEvent.press(screen.getByText('Friends'));
@@ -264,7 +264,7 @@ describe('Discovery intercept screen', () => {
       friends_selected: true,
       friends: [
         {
-          friend_player_id: null,
+          friend_player_user_id: null,
           full_name: 'Saved Friend',
           email: 'saved@example.com',
         } as DiscoverySummary['friends'][number],

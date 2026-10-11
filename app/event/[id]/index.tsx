@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -26,6 +25,7 @@ import DivisionGroupsList, {
 import CancelRegistrationModal from '@/components/Registration/CancelRegistrationModal';
 import ShareReferralModal from '@/components/Registration/ShareReferralModal';
 import LoginModal from '@/components/Login/LoginModal';
+import AspectCover from '@/components/Events/AspectCover';
 import DivisionColorBadge from '@/components/Events/DivisionColorBadge';
 import { EventBadge } from '@/types/types';
 import type { EventRegistration, RegistrationCancelReason } from '@/types/api';
@@ -272,7 +272,7 @@ export default function EventDetailScreen() {
   const status = isAuthed ? registrationToEventStatus(registrations) : 'none';
   const details = eventToDetails(event, status);
   const eventEndMs = eventEndDate(event).getTime();
-  const eventEnded = !Number.isNaN(eventEndMs) && Date.now() >= eventEndMs;
+  const eventEnded = Number.isFinite(eventEndMs) && Date.now() >= eventEndMs;
   const tabs: readonly TabKey[] = eventEnded
     ? ALL_TABS.filter((t) => t !== 'Deadlines')
     : ALL_TABS;
@@ -330,30 +330,42 @@ export default function EventDetailScreen() {
         ]}
         stickyHeaderIndices={[1]}
       >
-        <View style={styles.coverWrap}>
-          {details.eventImage ? (
-            <Image
+        {details.eventImage ? (
+          <View style={styles.coverWrap} testID="event-cover-wrap">
+            <AspectCover
               source={details.eventImage}
-              style={styles.coverImage}
+              aspectRatio={details.coverAspectRatio}
               testID="event-cover"
             />
-          ) : (
-            <View style={styles.coverEmpty} testID="event-cover-empty" />
-          )}
-          {badges.length > 0 ? (
-            <View style={styles.badgeStack} testID="event-detail-badges">
-              {badges.map((badge) => (
-                <View
-                  key={badge.key}
-                  style={[styles.badge, { backgroundColor: badgeColor(badge.key) }]}
-                  testID={`event-badge-${badge.key}`}
-                >
-                  <Text style={styles.badgeText}>{badge.label}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </View>
+            {badges.length > 0 ? (
+              <View style={styles.badgeStack} testID="event-detail-badges">
+                {badges.map((badge) => (
+                  <View
+                    key={badge.key}
+                    style={[styles.badge, { backgroundColor: badgeColor(badge.key) }]}
+                    testID={`event-badge-${badge.key}`}
+                  >
+                    <Text style={styles.badgeText}>{badge.label}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : badges.length > 0 ? (
+          <View style={styles.badgeOnlyRow} testID="event-detail-badges">
+            {badges.map((badge) => (
+              <View
+                key={badge.key}
+                style={[styles.badge, { backgroundColor: badgeColor(badge.key) }]}
+                testID={`event-badge-${badge.key}`}
+              >
+                <Text style={styles.badgeText}>{badge.label}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View />
+        )}
 
         <View style={styles.stickyChrome} testID="event-sticky-chrome">
           <Text style={styles.titleAboveTabs} testID="event-title-above-tabs">
@@ -413,16 +425,25 @@ export default function EventDetailScreen() {
                 </View>
 
                 {details.schedule.length > 0 && (
-                  <View style={styles.section}>
+                  <View style={styles.section} testID="event-schedule">
                     <Text style={styles.sectionTitle}>Schedule</Text>
-                    <View style={styles.scheduleCard}>
-                      {details.schedule.map((item, index) => (
-                        <View key={index} style={styles.scheduleRow}>
-                          <Text style={styles.scheduleLabel}>{item.label}</Text>
-                          <Text style={styles.scheduleTime}>{item.time}</Text>
-                        </View>
-                      ))}
-                    </View>
+                    {details.schedule.map((box, boxIndex) => (
+                      <View
+                        key={boxIndex}
+                        style={[
+                          styles.scheduleCard,
+                          boxIndex > 0 ? styles.scheduleCardSpaced : null,
+                        ]}
+                        testID={`schedule-box-${boxIndex}`}
+                      >
+                        {box.items.map((item, index) => (
+                          <View key={index} style={styles.scheduleRow}>
+                            <Text style={styles.scheduleLabel}>{item.label}</Text>
+                            <Text style={styles.scheduleTime}>{item.time}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
                   </View>
                 )}
 
@@ -677,6 +698,9 @@ export default function EventDetailScreen() {
         eventId={eventId}
         eventName={event.name}
         eventSlug={event.slug}
+        eventStartsAt={event.event_starts_at}
+        eventEndsAt={event.event_ends_at}
+        registrationAllowedUntil={event.registration_allowed_until}
         onClose={() => setShareOpen(false)}
       />
 
@@ -698,10 +722,22 @@ export default function EventDetailScreen() {
             {infoModal === 'date' ? (
               <>
                 <Text style={styles.infoModalTitle}>Date</Text>
-                <Text style={styles.infoModalBody} testID="info-modal-date">
-                  {details.date}
-                  {details.weekday ? ` · ${details.weekday}` : ''}
-                </Text>
+                {(details.dateModalLines.length > 0
+                  ? details.dateModalLines
+                  : [
+                      `${details.date}${
+                        details.weekday ? ` · ${details.weekday}` : ''
+                      }`,
+                    ]
+                ).map((line, index) => (
+                  <Text
+                    key={index}
+                    style={styles.infoModalBody}
+                    testID={index === 0 ? 'info-modal-date' : `info-modal-date-${index}`}
+                  >
+                    {line}
+                  </Text>
+                ))}
               </>
             ) : (
               <>
@@ -746,18 +782,15 @@ const styles = StyleSheet.create({
   },
   coverWrap: {
     width: '100%',
-    height: 200,
-    backgroundColor: Colors.GRAY,
+    position: 'relative',
   },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  coverEmpty: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.GRAY,
+  badgeOnlyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingTop: 13,
   },
   badgeStack: {
     position: 'absolute',
@@ -1017,12 +1050,18 @@ const styles = StyleSheet.create({
     color: Colors.CREAM_60,
     textAlign: 'right',
   },
+  scheduleStack: {
+    gap: 12,
+  },
   scheduleCard: {
     backgroundColor: Colors.GRAY,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
+  },
+  scheduleCardSpaced: {
+    marginTop: 12,
   },
   scheduleRow: {
     flexDirection: 'row',

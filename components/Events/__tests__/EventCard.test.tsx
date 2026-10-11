@@ -9,6 +9,7 @@ const baseEvent: EventCardData = {
   location: 'Arena',
   date: '15 June 2099',
   coverImage: { uri: 'https://example.com/cover.png' },
+  coverAspectRatio: 1.5,
   status: 'none',
   timing: 'upcoming',
   badges: [
@@ -38,10 +39,11 @@ describe('EventCard', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('renders an empty cover area when coverImage is null', () => {
-    render(<EventCard event={{ ...baseEvent, coverImage: null }} />);
-    expect(screen.getByTestId('event-card-cover-empty')).toBeTruthy();
+  it('omits the cover wrapper when coverImage is null', () => {
+    render(<EventCard event={{ ...baseEvent, coverImage: null, coverAspectRatio: null }} />);
     expect(screen.queryByTestId('event-card-cover')).toBeNull();
+    expect(screen.queryByTestId('event-card-cover-empty')).toBeNull();
+    expect(screen.getByTestId('event-card-badges')).toBeTruthy();
   });
 
   it('renders without badges when none provided', () => {

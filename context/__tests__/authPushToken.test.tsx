@@ -63,7 +63,7 @@ function renderProbe() {
 beforeEach(() => {
   jest.clearAllMocks();
   (getToken as jest.Mock).mockResolvedValue(null);
-  (apiPost as jest.Mock).mockResolvedValue({ token: 'sanctum-token', player: PLAYER });
+  (apiPost as jest.Mock).mockResolvedValue({ token: 'sanctum-token', user: PLAYER });
   (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
   (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({
     data: 'ExponentPushToken[test]',

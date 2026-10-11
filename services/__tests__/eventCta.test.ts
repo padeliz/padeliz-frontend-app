@@ -1,11 +1,11 @@
 import { eventEndDate, getEventStickyCta } from '@/services/eventCta';
-import { productDateTimeToDate } from '@/services/dateRange';
 import type { EventStatus } from '@/types/types';
 
 // 2026-06-15 18:00 Bucharest (EEST, UTC+3) === 15:00Z
+const EVENT_ENDS_AT = Date.parse('2026-06-15T15:00:00.000Z') / 1000;
+
 const event = {
-  date: '2026-06-15',
-  closing_time: '18:00:00',
+  event_ends_at: EVENT_ENDS_AT,
   registration_allowed_until: Date.parse('2026-06-10T12:00:00Z') / 1000,
 };
 
@@ -30,20 +30,14 @@ function cta(
 }
 
 describe('eventEndDate', () => {
-  it('resolves date + closing_time in Europe/Bucharest (summer, UTC+3)', () => {
+  it('resolves event_ends_at as an exact Date', () => {
     expect(eventEndDate(event).toISOString()).toBe('2026-06-15T15:00:00.000Z');
-  });
-
-  it('uses UTC+2 in winter', () => {
-    expect(
-      productDateTimeToDate('2026-01-20', '18:00:00').toISOString()
-    ).toBe('2026-01-20T16:00:00.000Z');
   });
 });
 
 describe('getEventStickyCta', () => {
   describe('event end', () => {
-    it('hides the CTA at and after eventEnd when the player did not participate', () => {
+    it('hides the CTA at and after event_ends_at when the player did not participate', () => {
       const statuses: EventStatus[] = [
         'none',
         'pending_payment',
@@ -70,7 +64,7 @@ describe('getEventStickyCta', () => {
       ).toMatchObject({ label: 'Participated', disabled: true, variant: 'grey' });
     });
 
-    it('still shows Pay Now one second before eventEnd (no calendar-day nulling)', () => {
+    it('still shows Pay Now one second before event_ends_at (no calendar-day nulling)', () => {
       expect(cta('pending_payment', JUST_BEFORE_END)?.label).toBe('Pay Now');
     });
 
@@ -108,7 +102,6 @@ describe('getEventStickyCta', () => {
     });
 
     it('keeps Register for a player with a level (a pending re-assessment never forces Assess)', () => {
-      // The CTA only depends on whether a level exists, never on assessment status.
       expect(cta('none', BEFORE_REG_CLOSE, { hasLevel: true })?.label).toBe('Register');
       expect(cta('none', BEFORE_REG_CLOSE, { hasLevel: false })?.label).toBe(
         'Assess my level'

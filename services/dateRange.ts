@@ -27,6 +27,26 @@ export function todayYmd(): string {
   return todayYmdBucharest();
 }
 
+/** Bucharest calendar day ("YYYY-MM-DD") for a unix epoch second. */
+export function dayYmdFromUnix(unix: number): string {
+  return new Date(unix * 1000).toLocaleDateString("en-CA", {
+    timeZone: PRODUCT_TIMEZONE,
+  });
+}
+
+/** Bucharest wall-clock H:i for a unix epoch second. */
+export function formatHiFromUnix(unix: number): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: PRODUCT_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(unix * 1000));
+  const hour = parts.find((p) => p.type === "hour")?.value ?? "00";
+  const minute = parts.find((p) => p.type === "minute")?.value ?? "00";
+  return `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+}
+
 /** Add calendar days to a YYYY-MM-DD string (UTC noon to avoid DST edge cases). */
 export function addDaysYmd(ymdStr: string, days: number): string {
   const [y, m, d] = ymdStr.split("-").map(Number);
@@ -42,11 +62,31 @@ export function addYearsYmd(ymdStr: string, years: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
-/** Classify an event's "YYYY-MM-DD" date relative to Bucharest today. */
-export function classifyTiming(date: string, now: Date = new Date()): EventTiming {
+/**
+ * Classify an event relative to Bucharest today.
+ *
+ * Past: today > ends day; Ongoing: starts day ≤ today ≤ ends day;
+ * Upcoming: today < starts day.
+ *
+ * Accepts unix epoch seconds or "YYYY-MM-DD" day strings for starts/ends.
+ * A single Ymd argument treats start and end as the same day.
+ */
+export function classifyTiming(
+  startsAtOrDay: number | string,
+  endsAtOrDay?: number | string,
+  now: Date = new Date()
+): EventTiming {
   const today = todayYmdBucharest(now);
-  if (date > today) return "upcoming";
-  if (date < today) return "past";
+  const startsDay =
+    typeof startsAtOrDay === "string"
+      ? startsAtOrDay
+      : dayYmdFromUnix(startsAtOrDay);
+  const endsRaw = endsAtOrDay === undefined ? startsAtOrDay : endsAtOrDay;
+  const endsDay =
+    typeof endsRaw === "string" ? endsRaw : dayYmdFromUnix(endsRaw);
+
+  if (today > endsDay) return "past";
+  if (today < startsDay) return "upcoming";
   return "ongoing";
 }
 
@@ -65,6 +105,7 @@ export function defaultListRange(
 
 /**
  * Server-side date range for a timing tab (Bucharest).
+ * Overlap semantics on the API: starts_day ≤ date_to AND ends_day ≥ date_from.
  * past = before today, ongoing = today, upcoming = after today.
  */
 export function rangeForTab(

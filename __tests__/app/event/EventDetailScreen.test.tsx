@@ -12,6 +12,7 @@ import {
   makePlayerLevel,
   makeRegistrationWithStatus,
 } from '@/testing/fixtures';
+import { productDateTimeToDate } from '@/services/dateRange';
 
 const mockPush = jest.fn();
 
@@ -145,7 +146,6 @@ describe('cover, description, organizer, schedule, badges', () => {
   it('renders cover, badges, title above tabs, and Info schedule', () => {
     mockEvent = makeEvent({
       badges: [{ key: 'new', label: 'New' }],
-      closing_time: '20:00:00',
     });
     renderScreen();
 
@@ -156,7 +156,9 @@ describe('cover, description, organizer, schedule, badges', () => {
     expect(screen.getByText('Tour Org • Minitour 21')).toBeTruthy();
     expect(screen.queryByTestId('event-organizer')).toBeNull();
     expect(screen.queryByText('Tournament Director')).toBeNull();
-    expect(screen.getByText('Check-in')).toBeTruthy();
+    expect(screen.getByTestId('schedule-box-0')).toBeTruthy();
+    expect(screen.getByTestId('schedule-box-1')).toBeTruthy();
+    expect(screen.getAllByText('Check-in').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Playing').length).toBeGreaterThan(0);
     expect(screen.queryByText('Closing')).toBeNull();
   });
@@ -179,12 +181,13 @@ describe('cover, description, organizer, schedule, badges', () => {
   it('shows event-only title when organizer is missing', () => {
     mockEvent = makeEvent({
       cover_url: null,
+      cover_images: [],
       organizer: null,
       organizer_id: null,
     });
     renderScreen();
 
-    expect(screen.getByTestId('event-cover-empty')).toBeTruthy();
+    expect(screen.queryByTestId('event-cover-wrap')).toBeNull();
     expect(screen.queryByTestId('event-cover')).toBeNull();
     expect(screen.getByText('Minitour 21')).toBeTruthy();
     expect(screen.queryByText(/Tour Org/)).toBeNull();
@@ -291,7 +294,12 @@ describe('hero meta and tabs', () => {
   });
 
   it('hides the Deadlines tab when the event is past', () => {
-    mockEvent = makeEvent({ date: '2000-01-01' });
+    const pastEnd = Math.floor(productDateTimeToDate('2000-01-01', '18:00:00').getTime() / 1000);
+    mockEvent = makeEvent({
+      event_starts_at: pastEnd - 8 * 3600,
+      event_ends_at: pastEnd,
+      event_nr_of_days: 1,
+    });
     renderScreen();
 
     for (const label of ['Info', 'Divisions', 'Description']) {
@@ -363,9 +371,11 @@ describe('hero meta and tabs', () => {
     ).toBeTruthy();
   });
 
-  it('shows a single Playing label for the schedule group', () => {
+  it('renders one schedule box per unique check-in+playing group', () => {
     renderScreen();
-    expect(screen.getAllByText('Playing')).toHaveLength(1);
+    expect(screen.getByTestId('schedule-box-0')).toBeTruthy();
+    expect(screen.getByTestId('schedule-box-1')).toBeTruthy();
+    expect(screen.getAllByText('Playing')).toHaveLength(2);
   });
 
   it('shows division color badges on the Divisions tab', () => {
@@ -568,7 +578,13 @@ describe('CTA from the live registrations', () => {
   });
 
   it('hides the CTA once the event has ended without participation', () => {
-    mockEvent = makeEvent({ date: '2000-01-01', has_participated: false });
+    const pastEnd = Math.floor(productDateTimeToDate('2000-01-01', '18:00:00').getTime() / 1000);
+    mockEvent = makeEvent({
+      event_starts_at: pastEnd - 8 * 3600,
+      event_ends_at: pastEnd,
+      event_nr_of_days: 1,
+      has_participated: false,
+    });
     renderScreen();
 
     expect(screen.queryByText('Register')).toBeNull();
@@ -577,7 +593,13 @@ describe('CTA from the live registrations', () => {
   });
 
   it('shows grey disabled Participated when past and has_participated', () => {
-    mockEvent = makeEvent({ date: '2000-01-01', has_participated: true });
+    const pastEnd = Math.floor(productDateTimeToDate('2000-01-01', '18:00:00').getTime() / 1000);
+    mockEvent = makeEvent({
+      event_starts_at: pastEnd - 8 * 3600,
+      event_ends_at: pastEnd,
+      event_nr_of_days: 1,
+      has_participated: true,
+    });
     renderScreen();
 
     const button = screen.getByRole('button', { name: 'Participated' });

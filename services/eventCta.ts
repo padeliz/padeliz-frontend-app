@@ -2,7 +2,7 @@
  * Sticky CTA for the event detail screen.
  *
  * Evaluation order:
- *   1. now >= event end (date + closing_time, Europe/Bucharest):
+ *   1. now >= event_ends_at (exact unix):
  *      has_participated → grey disabled "Participated"; else → no CTA.
  *   2. Map registration status + player level to the actionable CTA
  *      (no calendar-timing nulling — an ongoing event can still be joined):
@@ -14,7 +14,6 @@
  */
 import type { Event } from "@/types/api";
 import type { EventStatus } from "@/types/types";
-import { productDateTimeToDate } from "@/services/dateRange";
 
 /** Where the CTA leads. `null` means the button is informational only. */
 export type CTATarget =
@@ -33,10 +32,7 @@ export type CTAConfig = {
 
 export type EventStickyCtaInput = {
   status: EventStatus;
-  event: Pick<
-    Event,
-    "date" | "closing_time" | "registration_allowed_until"
-  >;
+  event: Pick<Event, "event_ends_at" | "registration_allowed_until">;
   /** The player holds a level (a `player_levels` row). */
   hasPlayerLevel: boolean;
   /** Guests always get the "Assess my level" entry point. */
@@ -49,11 +45,11 @@ export type EventStickyCtaInput = {
   now?: Date;
 };
 
-/** End of the event: event date + closing_time in the product timezone. */
+/** Exact event end instant from `event_ends_at`. */
 export function eventEndDate(
-  event: Pick<Event, "date" | "closing_time">
+  event: Pick<Event, "event_ends_at">
 ): Date {
-  return productDateTimeToDate(event.date, event.closing_time);
+  return new Date(event.event_ends_at * 1000);
 }
 
 function actionableCta(
@@ -96,8 +92,8 @@ export function getEventStickyCta({
   hasParticipated = false,
   now = new Date(),
 }: EventStickyCtaInput): CTAConfig | null {
-  const eventEnd = eventEndDate(event).getTime();
-  if (!Number.isNaN(eventEnd) && now.getTime() >= eventEnd) {
+  const eventEndMs = event.event_ends_at * 1000;
+  if (Number.isFinite(eventEndMs) && now.getTime() >= eventEndMs) {
     if (hasParticipated) {
       return {
         label: "Participated",
