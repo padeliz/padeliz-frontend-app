@@ -9,7 +9,7 @@ import { getToken } from '@/services/tokenStorage';
 import { makePlayer } from '@/testing/fixtures';
 
 jest.mock('expo-auth-session', () => ({
-  makeRedirectUri: () => 'padeliz://redirect',
+  makeRedirectUri: () => 'padeliz-app://redirect',
   useAuthRequest: () => [null, null, jest.fn()],
 }));
 

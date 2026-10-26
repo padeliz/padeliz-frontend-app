@@ -1,0 +1,56 @@
+name: Deploy production
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-app-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy-production
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DOCR
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            registry.digitalocean.com/padeliz/padeliz-frontend-app:sha-${{ github.sha }}
+            registry.digitalocean.com/padeliz/padeliz-frontend-app:production
+          build-args: |
+            EXPO_PUBLIC_BASE_URL=https://app.padeliz.ro
+            EXPO_PUBLIC_SCHEME=padeliz-app://
+            EXPO_PUBLIC_API_URL=https://backend.padeliz.ro/api/v1
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to App Platform
+        uses: digitalocean/app_action/deploy@v2
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_id: 385228c0-774e-4907-9bb9-ef9508b3508c
+          app_spec_location: .do/app.production.yaml

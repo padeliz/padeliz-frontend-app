@@ -19,7 +19,7 @@ REPLACEMENTS = [
     ('"editions"', '"events"'),
     ("host: 'editions'", "host: 'events'"),
     ('host: "editions"', 'host: "events"'),
-    ("padeliz://editions", "padeliz://events"),
+    ("padeliz-app://editions", "padeliz-app://events"),
     ("editionShareUrl", "eventShareUrl"),
     ("Edition", "Event"),
     ("edition", "event"),

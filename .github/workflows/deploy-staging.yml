@@ -1,0 +1,74 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-app-staging
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci || npm install
+      - name: Run tests
+        env:
+          EXPO_PUBLIC_BASE_URL: http://localhost:8081
+          EXPO_PUBLIC_SCHEME: padeliz-app://
+          EXPO_PUBLIC_API_URL: http://localhost:8000/api/v1
+        run: npx jest --ci --coverage=false --runInBand
+
+  deploy:
+    name: deploy-staging
+    needs: test
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DOCR
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            registry.digitalocean.com/padeliz/padeliz-frontend-app:sha-${{ github.sha }}
+            registry.digitalocean.com/padeliz/padeliz-frontend-app:staging
+          build-args: |
+            EXPO_PUBLIC_BASE_URL=https://app.staging.padeliz.ro
+            EXPO_PUBLIC_SCHEME=padeliz-app://
+            EXPO_PUBLIC_API_URL=https://backend.staging.padeliz.ro/api/v1
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to App Platform
+        uses: digitalocean/app_action/deploy@v2
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_id: eaec67f5-e481-4c59-a0ad-dae60faf079d
+          app_spec_location: .do/app.staging.yaml

@@ -10,16 +10,16 @@ jest.mock('@/utils/cache', () => ({
 }));
 
 describe('parseReferralDeeplink', () => {
-  it('parses padeliz://event/{id}?ref=CODE', () => {
-    expect(parseReferralDeeplink('padeliz://event/42?ref=ABC123')).toEqual({
+  it('parses padeliz-app://event/{id}?ref=CODE', () => {
+    expect(parseReferralDeeplink('padeliz-app://event/42?ref=ABC123')).toEqual({
       eventId: 42,
       ref: 'ABC123',
     });
   });
 
-  it('parses padeliz://event/{id}/{slug}?ref=CODE', () => {
+  it('parses padeliz-app://event/{id}/{slug}?ref=CODE', () => {
     expect(
-      parseReferralDeeplink('padeliz://event/42/summer-open?ref=ABC123')
+      parseReferralDeeplink('padeliz-app://event/42/summer-open?ref=ABC123')
     ).toEqual({
       eventId: 42,
       ref: 'ABC123',
@@ -38,12 +38,23 @@ describe('parseReferralDeeplink', () => {
     ).toEqual({ eventId: 42, ref: 'HTTPS1', slug: 'club-open' });
   });
 
+  it('parses path-only /event/ referral links', () => {
+    expect(parseReferralDeeplink('/event/42?ref=PATH1')).toEqual({
+      eventId: 42,
+      ref: 'PATH1',
+    });
+  });
+
+  it('returns null for legacy padeliz:// scheme', () => {
+    expect(parseReferralDeeplink('padeliz://event/42?ref=ABC123')).toBeNull();
+  });
+
   it('returns null without a ref', () => {
-    expect(parseReferralDeeplink('padeliz://event/42')).toBeNull();
+    expect(parseReferralDeeplink('padeliz-app://event/42')).toBeNull();
   });
 
   it('returns null for legacy /events/ paths', () => {
-    expect(parseReferralDeeplink('padeliz://events/42?ref=ABC')).toBeNull();
+    expect(parseReferralDeeplink('padeliz-app://events/42?ref=ABC')).toBeNull();
     expect(
       parseReferralDeeplink('https://app.padeliz.ro/events/42?ref=ABC')
     ).toBeNull();

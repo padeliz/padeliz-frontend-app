@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  pull_request:
+
+concurrency:
+  group: ci-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci || npm install
+      - name: Run tests
+        env:
+          EXPO_PUBLIC_BASE_URL: http://localhost:8081
+          EXPO_PUBLIC_SCHEME: padeliz-app://
+          EXPO_PUBLIC_API_URL: http://localhost:8000/api/v1
+        run: npx jest --ci --coverage=false --runInBand
