@@ -67,8 +67,7 @@ jobs:
       - name: Deploy to App Platform
         uses: digitalocean/app_action/deploy@v2
         env:
-          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_DIGEST_WEB: ${{ steps.build.outputs.digest }}
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_id: eaec67f5-e481-4c59-a0ad-dae60faf079d
-          app_spec_location: .do/app.staging.yaml
+          app_name: padeliz-frontend-app-staging
