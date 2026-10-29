@@ -68,7 +68,7 @@ describe('handleReferralUrl', () => {
   it('navigates without slug when link has none', async () => {
     const navigate = jest.fn();
     await handleReferralUrl({
-      url: 'padeliz://event/9?ref=ZZ',
+      url: 'padeliz-app://event/9?ref=ZZ',
       pathname: '/event/1',
       isAuthed: true,
       navigate,

@@ -137,7 +137,7 @@ export async function flushReferralQueue(): Promise<{
 /**
  * Parse referral links:
  * - `{BASE_URL}/event/{id}/{slug?}?ref=CODE` (HTTPS)
- * - `padeliz://event/{id}/{slug?}?ref=CODE`
+ * - `padeliz-app://event/{id}/{slug?}?ref=CODE`
  * - path-only `/event/{id}/{slug?}?ref=CODE`
  */
 export function parseReferralDeeplink(
@@ -146,7 +146,7 @@ export function parseReferralDeeplink(
   if (!url) return null;
   try {
     const normalized = url.includes("://")
-      ? url.replace(/^padeliz:\/\//i, "https://padeliz.local/")
+      ? url.replace(/^padeliz-app:\/\//i, "https://padeliz.local/")
       : `https://padeliz.local/${url.replace(/^\//, "")}`;
     const parsed = new URL(normalized);
     const path = parsed.pathname.replace(/\/+$/, "");

@@ -16,17 +16,17 @@ const origin = normalizeBaseUrl(process.env.EXPO_PUBLIC_BASE_URL);
 
 module.exports = {
   expo: {
-    name: 'padeliz-frontend-app',
-    slug: 'padeliz',
+    name: 'Padeliz App',
+    slug: 'padeliz-app',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
-    scheme: 'padeliz',
+    scheme: 'padeliz-app',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.padeliz',
+      bundleIdentifier: 'com.padeliz.app',
       usesAppleSignIn: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -37,14 +37,14 @@ module.exports = {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
-      package: 'com.padeliz',
+      package: 'com.padeliz.app',
       intentFilters: [
         {
           action: 'VIEW',
           autoVerify: false,
           data: [
             {
-              scheme: 'padeliz',
+              scheme: 'padeliz-app',
               host: 'event',
               pathPrefix: '/',
             },
@@ -89,7 +89,7 @@ module.exports = {
         origin,
       },
       eas: {
-        projectId: 'dbc9eec8-2aba-4de7-a421-f28ade8c85c7',
+        projectId: '68e596b3-81bb-41db-8b07-9b237adeba03',
       },
       expoConfig: {},
     },
