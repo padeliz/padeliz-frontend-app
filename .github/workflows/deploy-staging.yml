@@ -87,5 +87,4 @@ jobs:
       - name: Smoke web
         env:
           SMOKE_URL: https://app.staging.padeliz.ro
-          SMOKE_MARKER: Padeliz App
         run: bash scripts/ci/smoke-web.sh
