@@ -54,6 +54,9 @@ jobs:
           context: .
           file: Dockerfile
           push: true
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
           tags: |
             registry.digitalocean.com/padeliz/padeliz-frontend-app:sha-${{ github.sha }}
             registry.digitalocean.com/padeliz/padeliz-frontend-app:staging
@@ -65,9 +68,24 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to App Platform
-        uses: digitalocean/app_action/deploy@v2
         env:
-          IMAGE_DIGEST_WEB: ${{ steps.build.outputs.digest }}
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: padeliz-frontend-app-staging
+          APP_NAME: padeliz-frontend-app-staging
+          IMAGE_REPOSITORY: padeliz/padeliz-frontend-app
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          COMPONENTS: web
+        run: |
+          python3 -m pip install --user pyyaml
+          bash scripts/ci/deploy-app-platform.sh
+
+  smoke:
+    name: smoke-web
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke web
+        env:
+          SMOKE_URL: https://app.staging.padeliz.ro
+          SMOKE_MARKER: Padeliz App
+        run: bash scripts/ci/smoke-web.sh
