@@ -638,14 +638,14 @@ function ProfileAccountBody() {
 }
 
 export default function AccountScreen() {
-  const { user, isLoading } = useAuth();
+  const { user, isHydrating } = useAuth();
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader title="Account" variant="root" />
 
-      {isLoading ? (
-        <View style={styles.centered}>
+      {isHydrating ? (
+        <View style={styles.centered} testID="account-hydrating">
           <ActivityIndicator color={Colors.BLUE} />
         </View>
       ) : user ? (

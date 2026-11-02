@@ -1,6 +1,8 @@
 import React from 'react';
 import { fireEvent, render, screen, act } from '@testing-library/react-native';
 import LoginModal from '@/components/Login/LoginModal';
+import { GOOGLE_SIGN_IN_CANCEL_MESSAGE } from '@/constants/authMessages';
+import { ApiError } from '@/services/apiError';
 
 const mockSignIn = jest.fn();
 let mockUser: { id: string } | null = null;
@@ -12,6 +14,7 @@ jest.mock('@/context/auth', () => ({
     user: mockUser,
     error: mockError,
     isLoading: false,
+    isHydrating: false,
   }),
 }));
 
@@ -68,7 +71,7 @@ describe('LoginModal', () => {
   });
 
   it('clears signingIn on OAuth error and keeps modal open', async () => {
-    mockSignIn.mockRejectedValue(new Error('cancelled'));
+    mockSignIn.mockRejectedValue(new Error(GOOGLE_SIGN_IN_CANCEL_MESSAGE));
     const onClose = jest.fn();
     render(<LoginModal visible onClose={onClose} />);
 
@@ -79,5 +82,32 @@ describe('LoginModal', () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByText('Sign in with Google')).toBeTruthy();
     expect(screen.queryByTestId('login-google-button-loading')).toBeNull();
+  });
+
+  it('stays open on 404/422 auth errors and Cancel still dismisses when idle', async () => {
+    mockError = new ApiError(
+      404,
+      'No player account found for this Google account. Ask an organizer to add your login email, then try again.'
+    );
+    mockSignIn.mockRejectedValue(mockError);
+    const onClose = jest.fn();
+    const { rerender } = render(<LoginModal visible onClose={onClose} />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Sign in with Google'));
+    });
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId('login-modal')).toBeTruthy();
+
+    mockError = new ApiError(
+      422,
+      "This Google email isn't verified yet. Verify it in your Google account, then try again."
+    );
+    rerender(<LoginModal visible onClose={onClose} />);
+    expect(screen.getByTestId('login-modal')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('login-modal-cancel'));
+    expect(onClose).toHaveBeenCalled();
   });
 });
