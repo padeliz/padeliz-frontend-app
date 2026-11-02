@@ -9,6 +9,7 @@ type Props = {
   variant: StatusVariant;
   message: string;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 };
 
 type VariantConfig = {
@@ -25,11 +26,17 @@ const variantConfig: Record<StatusVariant, VariantConfig> = {
   loading: { bg: Colors.BLUE_T,   border: Colors.BLUE,   color: Colors.BLUE },
 };
 
-export default function StatusBanner({ variant, message, style }: Props) {
+export default function StatusBanner({
+  variant,
+  message,
+  style,
+  testID,
+}: Props) {
   const config = variantConfig[variant];
 
   return (
     <View
+      testID={testID}
       style={[
         styles.container,
         { backgroundColor: config.bg, borderColor: config.border },

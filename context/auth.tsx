@@ -36,8 +36,10 @@ import {
   type AppUser,
 } from "@/services/authUser";
 import type { AuthData, Player } from "@/types/api";
+import { GOOGLE_SIGN_IN_CANCEL_MESSAGE } from "@/constants/authMessages";
 
 export { mapPlayerToUser, type AppUser } from "@/services/authUser";
+export { GOOGLE_SIGN_IN_CANCEL_MESSAGE } from "@/constants/authMessages";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -62,6 +64,12 @@ type GoogleOAuthPurpose = "login" | "link";
 
 type AuthContextValue = {
   user: AppUser | null;
+  /**
+   * True only while restoring a session from storage on startup.
+   * Not set during Google login / logout — those use local UI busy state.
+   */
+  isHydrating: boolean;
+  /** @deprecated Alias of isHydrating — prefer isHydrating. */
   isLoading: boolean;
   error: Error | null;
   /** Current login entry point. For now performs a dev-login. */
@@ -88,7 +96,7 @@ const AuthContext = React.createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<AppUser | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isHydrating, setIsHydrating] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
   const tokenRef = React.useRef<string | null>(null);
   const isWeb = Platform.OS === "web";
@@ -178,7 +186,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const devLogin = React.useCallback(
     async (email: string) => {
-      setIsLoading(true);
       try {
         const data = await apiPost<AuthData>(
           "/app/auth/dev-login",
@@ -189,8 +196,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (e) {
         setError(e as Error);
         throw e;
-      } finally {
-        setIsLoading(false);
       }
     },
     [finishLogin]
@@ -198,7 +203,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = React.useCallback(
     async (idToken: string) => {
-      setIsLoading(true);
       try {
         const data = await apiPost<AuthData>(
           "/app/auth/google",
@@ -209,8 +213,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (e) {
         setError(e as Error);
         throw e;
-      } finally {
-        setIsLoading(false);
       }
     },
     [finishLogin]
@@ -254,8 +256,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     if (response.type === "cancel" || response.type === "dismiss") {
-      const err = new Error("Google sign-in was cancelled");
+      const err = new Error(GOOGLE_SIGN_IN_CANCEL_MESSAGE);
       if (settlePendingGoogleToken(err)) return;
+      setError(err);
       return;
     }
     if (response.type !== "success") return;
@@ -264,7 +267,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const codeVerifier = request?.codeVerifier;
     void (async () => {
       const forLink = purpose === "link";
-      if (!forLink) setIsLoading(true);
       try {
         const { code } = response.params;
         const idToken = await exchangeCodeForGoogleIdToken(code, codeVerifier);
@@ -279,8 +281,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const err = e as Error;
         if (settlePendingGoogleToken(err)) return;
         setError(err);
-      } finally {
-        if (!forLink) setIsLoading(false);
       }
     })();
     // Only react to a new auth response; request/isWeb/signInWithGoogle are stable.
@@ -293,7 +293,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const result = await promptAsync();
     if (!result) return;
     if (result.type === "cancel" || result.type === "dismiss") {
-      const err = new Error("Google sign-in was cancelled");
+      const err = new Error(GOOGLE_SIGN_IN_CANCEL_MESSAGE);
       setError(err);
       throw err;
     }
@@ -348,7 +348,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setError(e as Error);
         }
       } finally {
-        if (active) setIsLoading(false);
+        if (active) setIsHydrating(false);
       }
     })();
     return () => {
@@ -358,7 +358,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value: AuthContextValue = {
     user,
-    isLoading,
+    isHydrating,
+    isLoading: isHydrating,
     error,
     signIn,
     devLogin,

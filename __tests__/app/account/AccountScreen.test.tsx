@@ -24,6 +24,7 @@ const mockRefreshMe = jest.fn(async () => undefined);
 
 let mockUser: ReturnType<typeof mapPlayerToUser> | null = mapPlayerToUser(makePlayer());
 let mockAuthLoading = false;
+let mockAuthError: Error | null = null;
 
 function renderAccount() {
   const result = renderWithQueryClient(<AccountScreen />);
@@ -42,7 +43,16 @@ jest.mock('@/context/auth', () => ({
     get user() {
       return mockUser;
     },
-    isLoading: mockAuthLoading,
+    get isHydrating() {
+      return mockAuthLoading;
+    },
+    get isLoading() {
+      return mockAuthLoading;
+    },
+    get error() {
+      return mockAuthError;
+    },
+    signIn: jest.fn(async () => undefined),
     signOut: mockSignOut,
     obtainGoogleIdToken: mockObtainGoogleIdToken,
     linkGoogleIdentity: mockLinkGoogleIdentity,
@@ -136,6 +146,7 @@ const divisionLevels = (n: number): Level[] => [
 beforeEach(() => {
   jest.clearAllMocks();
   mockAuthLoading = false;
+  mockAuthError = null;
   mockUser = mapPlayerToUser(makePlayer());
   mockIdentities = [makeGoogleIdentity({ id_user_identity: 10, email: 'linked@example.com' })];
   mockIdentitiesLoading = false;
@@ -155,6 +166,24 @@ describe('AccountScreen', () => {
     mockUser = null;
     const { client } = renderAccount();
     expect(screen.getByTestId('account-guest-login')).toBeTruthy();
+    await disposeTestQueryClient(client);
+  });
+
+  it('shows full-screen spinner only while hydrating, not during login error', async () => {
+    mockUser = null;
+    mockAuthLoading = true;
+    const { client, rerender } = renderAccount();
+    expect(screen.getByTestId('account-hydrating')).toBeTruthy();
+    expect(screen.queryByTestId('account-guest-login')).toBeNull();
+
+    mockAuthLoading = false;
+    mockAuthError = new Error(
+      "Oops, did you stop the login or what?! Tap the button again when you're ready."
+    );
+    rerender(<AccountScreen />);
+    expect(screen.queryByTestId('account-hydrating')).toBeNull();
+    expect(screen.getByTestId('account-guest-login')).toBeTruthy();
+    expect(screen.getByTestId('login-options')).toBeTruthy();
     await disposeTestQueryClient(client);
   });
 
