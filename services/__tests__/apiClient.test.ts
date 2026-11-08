@@ -1,5 +1,11 @@
-import { apiDelete, setTokenGetter } from '@/services/apiClient';
+import {
+  apiDelete,
+  apiGetEnvelope,
+  setTokenGetter,
+  setUnauthorizedHandler,
+} from '@/services/apiClient';
 import { API_URL } from '@/utils/constants';
+import { ApiError } from '@/services/apiError';
 
 const fetchMock = jest.fn();
 
@@ -13,6 +19,7 @@ beforeEach(() => {
     text: async () => JSON.stringify({ success: true, message: 'ok', data: { id: 1 } }),
   });
   setTokenGetter(() => 'test-token');
+  setUnauthorizedHandler(null);
 });
 
 describe('apiDelete', () => {
@@ -43,5 +50,37 @@ describe('apiDelete', () => {
     await expect(apiDelete('/app/device-tokens', { token: 'abc' })).resolves.toEqual({
       id: 1,
     });
+  });
+});
+
+describe('401 unauthorized handler', () => {
+  it('invokes the handler on authed 401 and still throws', async () => {
+    const onUnauthorized = jest.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: async () => JSON.stringify({ message: 'Unauthenticated.' }),
+    });
+
+    await expect(apiGetEnvelope('/app/auth/me')).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not invoke the handler for auth: false 401', async () => {
+    const onUnauthorized = jest.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: async () => JSON.stringify({ message: 'Unauthenticated.' }),
+    });
+
+    await expect(
+      apiGetEnvelope('/app/auth/me', { auth: false })
+    ).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthorized).not.toHaveBeenCalled();
   });
 });

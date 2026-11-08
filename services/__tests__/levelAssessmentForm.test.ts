@@ -9,6 +9,7 @@ import {
   isDraftEditable,
   isLockedForReview,
   isTerminalAssessment,
+  mergeBaselineForStep,
   stepHasData,
   stepIsDirty,
   yearOfBirthError,
@@ -208,6 +209,37 @@ describe('draft vs locked', () => {
     expect(initialStepForAssessment(makeAssessment())).toBe(1);
     expect(initialStepForAssessment(makeAssessment({ ready_for_review: true }))).toBe(4);
     expect(initialStepForAssessment(makeAssessment({ review_status: 'approved' }))).toBe(4);
+  });
+});
+
+describe('mergeBaselineForStep', () => {
+  it('updates only Sports keys for step 1', () => {
+    const baseline: AssessmentFormState = {
+      ...initialFormState,
+      playtomicId: 'keep-me',
+      selectedSports: ['tennis'],
+      racket: { tennis: { level: 'amateur', years_of_playing: '', matches_played: '1', lessons_had: '' } },
+    };
+    const snapshot = withPadel({ level: 'advanced', matches_played: '10' });
+    const next = mergeBaselineForStep(baseline, snapshot, 1);
+    expect(next.selectedSports).toEqual(['padel']);
+    expect(next.racket.padel?.level).toBe('advanced');
+    expect(next.racket.tennis).toBeUndefined();
+    expect(next.playtomicId).toBe('keep-me');
+  });
+
+  it('updates only Details keys for step 2', () => {
+    const baseline = withPadel({ level: 'amateur', matches_played: '3' });
+    const snapshot = {
+      ...baseline,
+      playtomicId: 'https://playtomic.com/profile/user/9',
+      yearOfBirth: '1999',
+    };
+    const next = mergeBaselineForStep(baseline, snapshot, 2);
+    expect(next.playtomicId).toBe('https://playtomic.com/profile/user/9');
+    expect(next.yearOfBirth).toBe('1999');
+    expect(next.selectedSports).toEqual(baseline.selectedSports);
+    expect(next.racket).toEqual(baseline.racket);
   });
 });
 

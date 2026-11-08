@@ -11,9 +11,16 @@ import { disposeTestQueryClient } from '@/testing/createTestQueryClient';
 import AccountScreen from '@/app/(tabs)/account';
 import { confirmAsync } from '@/services/confirm';
 import { mapPlayerToUser } from '@/services/authUser';
-import { makeGoogleIdentity, makePlayer, makePlayerLevel } from '@/testing/fixtures';
+import {
+  makeAssessment,
+  makeGoogleIdentity,
+  makePlayer,
+  makePlayerLevel,
+  makeStudentProof,
+} from '@/testing/fixtures';
 import type { Level, PlayerLevel } from '@/types/api';
 import { ApiError } from '@/services/apiError';
+import { formatDateShort } from '@/services/mappers';
 
 jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
@@ -106,9 +113,43 @@ jest.mock('expo-router', () =>
 );
 
 let mockCurrentLevel: PlayerLevel | null = null;
+let mockLatestAssessment: import('@/types/api').PlayerLevelAssessment | null = null;
+let mockAssessmentStatus: import('@/types/api').LevelAssessmentStatus | null = null;
+let mockStudentProofs: import('@/types/api').StudentProofsIndex | null = {
+  has_active: false,
+  pending: null,
+  items: [],
+};
 jest.mock('@/services/hooks/useLevelAssessment', () => ({
   useCurrentLevel: () => ({
     data: mockCurrentLevel,
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+  useLatestAssessment: () => ({
+    data: mockLatestAssessment,
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+  useLevelAssessmentStatus: () => ({
+    data: mockAssessmentStatus,
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+  useLevelProgress: () => ({
+    data: { items: [] },
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
+jest.mock('@/services/hooks/useStudentProofs', () => ({
+  useStudentProofs: () => ({
+    data: mockStudentProofs,
     loading: false,
     error: null,
     refetch: jest.fn(),
@@ -153,6 +194,9 @@ beforeEach(() => {
   mockUnlinkPending = false;
   mockAvatarPending = false;
   mockCurrentLevel = null;
+  mockLatestAssessment = null;
+  mockAssessmentStatus = null;
+  mockStudentProofs = { has_active: false, pending: null, items: [] };
   mockLevels = null;
   mockLevelStarting = false;
   mockLevelFlowError = null;
@@ -166,6 +210,23 @@ describe('AccountScreen', () => {
     mockUser = null;
     const { client } = renderAccount();
     expect(screen.getByTestId('account-guest-login')).toBeTruthy();
+    await disposeTestQueryClient(client);
+  });
+
+  it('links guest Terms and Privacy to the legal site', async () => {
+    mockUser = null;
+    const { Linking } = require('react-native');
+    const openURL = jest
+      .spyOn(Linking, 'openURL')
+      .mockResolvedValue(undefined as never);
+    const { client } = renderAccount();
+    expect(screen.getByTestId('account-guest-terms-link')).toBeTruthy();
+    expect(screen.getByTestId('account-guest-privacy-link')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('account-guest-terms-link'));
+    expect(openURL).toHaveBeenCalledWith(
+      expect.stringContaining('/terms-and-conditions.html')
+    );
+    openURL.mockRestore();
     await disposeTestQueryClient(client);
   });
 
@@ -329,10 +390,13 @@ describe('AccountScreen', () => {
   });
 
   describe('player level', () => {
-    it('shows the Assess my level CTA when the player has no level', async () => {
+    it('shows the Assess My Level CTA when the player has no level', async () => {
       const { client } = await renderAccountReady();
 
       expect(screen.queryByTestId('account-level-band')).toBeNull();
+      expect(screen.getByText('Assess My Level')).toBeTruthy();
+      expect(screen.getByText('My Level')).toBeTruthy();
+      expect(screen.getByText('ID: #00009')).toBeTruthy();
       fireEvent.press(screen.getByTestId('account-assess-level'));
 
       expect(mockStartLevelFlow).toHaveBeenCalledWith('assessment');
@@ -349,7 +413,7 @@ describe('AccountScreen', () => {
       await disposeTestQueryClient(client);
     });
 
-    it('opens a centered modal with band, numeric level and Update level assessment', async () => {
+    it('opens a centered modal with band, numeric level and Assess My Level', async () => {
       mockCurrentLevel = makePlayerLevel({ band_name: 'Advanced', level: '4.50' });
       const { client } = await renderAccountReady();
 
@@ -361,7 +425,7 @@ describe('AccountScreen', () => {
       expect(screen.getByText('Level 4.50')).toBeTruthy();
 
       await act(async () => {
-        fireEvent.press(screen.getByText('Update level assessment'));
+        fireEvent.press(screen.getByText('Assess My Level'));
       });
       expect(mockStartLevelFlow).toHaveBeenCalledWith('assessment');
       await waitFor(() => expect(screen.queryByTestId('level-modal')).toBeNull());
@@ -375,7 +439,7 @@ describe('AccountScreen', () => {
       fireEvent.press(screen.getByTestId('account-level-band'));
 
       expect(screen.getByTestId('level-modal-update-loading')).toBeTruthy();
-      expect(screen.queryByText('Update level assessment')).toBeNull();
+      expect(screen.queryByText('Assess My Level')).toBeNull();
 
       fireEvent.press(screen.getByTestId('level-modal-update'));
       expect(mockStartLevelFlow).not.toHaveBeenCalled(); // disabled while loading
@@ -470,6 +534,147 @@ describe('AccountScreen', () => {
       fireEvent.press(screen.getByTestId('account-student-proof'));
 
       expect(mockPush).toHaveBeenCalledWith({ pathname: '/student-proof', params: {} });
+      await disposeTestQueryClient(client);
+    });
+
+    it('shows secondary In review on the level pill when a level exists and assessment is in review', async () => {
+      mockCurrentLevel = makePlayerLevel({ band_name: 'Advanced', level: '4.50' });
+      mockLatestAssessment = makeAssessment({
+        ready_for_review: true,
+        review_status: 'pending',
+        submitted_at: 10,
+      });
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByTestId('account-level-band')).toBeTruthy();
+      expect(screen.getByTestId('account-level-in-review')).toBeTruthy();
+      expect(screen.getByText('In review')).toBeTruthy();
+      await disposeTestQueryClient(client);
+    });
+
+    it('routes no-level in-review pill to assessment Status (not LevelModal)', async () => {
+      mockLatestAssessment = makeAssessment({
+        ready_for_review: true,
+        review_status: 'pending',
+        submitted_at: 10,
+      });
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByTestId('account-level-in-review-pill')).toBeTruthy();
+      expect(screen.getByText('Your level assessment is in review...')).toBeTruthy();
+      expect(screen.queryByTestId('account-assess-level')).toBeNull();
+      fireEvent.press(screen.getByTestId('account-level-in-review-pill'));
+      expect(mockPush).toHaveBeenCalledWith({ pathname: '/level-assessment', params: {} });
+      expect(screen.queryByTestId('level-modal')).toBeNull();
+      await disposeTestQueryClient(client);
+    });
+
+    it('shows Assess My Level Again when there is prior submitted/terminal history', async () => {
+      mockLatestAssessment = makeAssessment({
+        review_status: 'rejected',
+        submitted_at: 10,
+        ready_for_review: false,
+      });
+      mockAssessmentStatus = {
+        latest: 'rejected',
+        overall: { approved: 0, pending: 0, discarded: 0, rejected: 1 },
+      };
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByText('Assess My Level Again')).toBeTruthy();
+      await disposeTestQueryClient(client);
+    });
+
+    it('keeps Assess My Level for a sole unsubmitted draft', async () => {
+      mockLatestAssessment = makeAssessment({
+        review_status: 'pending',
+        ready_for_review: false,
+        submitted_at: null,
+      });
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByText('Assess My Level')).toBeTruthy();
+      expect(screen.queryByText('Assess My Level Again')).toBeNull();
+      await disposeTestQueryClient(client);
+    });
+
+    it('shows Student pill with Until date and opens StudentStatusModal', async () => {
+      const proof = makeStudentProof({
+        review_status: 'approved',
+        student_until: '2027-08-20',
+        submitted_at: 10,
+      });
+      mockStudentProofs = { has_active: true, pending: null, items: [proof] };
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByTestId('account-student-pill')).toBeTruthy();
+      expect(screen.getByTestId('account-student-primary').props.children).toBe('Student');
+      expect(screen.getByTestId('account-student-until').props.children).toEqual([
+        'Until ',
+        formatDateShort('2027-08-20'),
+      ]);
+      fireEvent.press(screen.getByTestId('account-student-pill'));
+      expect(screen.getByTestId('student-status-modal')).toBeTruthy();
+      await disposeTestQueryClient(client);
+    });
+
+    it('shows In review secondary on active Student pill when proof is also in review', async () => {
+      const active = makeStudentProof({
+        review_status: 'approved',
+        student_until: '2027-08-20',
+        submitted_at: 10,
+      });
+      const pending = makeStudentProof({
+        id_player_student_proof: 4,
+        ready_for_review: true,
+        review_status: 'pending',
+        submitted_at: 20,
+      });
+      mockStudentProofs = { has_active: true, pending, items: [pending, active] };
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByTestId('account-student-primary').props.children).toBe('Student');
+      expect(screen.getByTestId('account-student-in-review')).toBeTruthy();
+      await disposeTestQueryClient(client);
+    });
+
+    it('shows Expired pill with Until date of the lapsed proof', async () => {
+      const proof = makeStudentProof({
+        review_status: 'approved',
+        student_until: '2020-01-15',
+        submitted_at: 10,
+      });
+      mockStudentProofs = { has_active: false, pending: null, items: [proof] };
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByTestId('account-student-primary').props.children).toBe('Expired');
+      expect(screen.getByTestId('account-student-until').props.children).toEqual([
+        'Until ',
+        formatDateShort('2020-01-15'),
+      ]);
+      await disposeTestQueryClient(client);
+    });
+
+    it('shows In review only student pill when no active/expired status', async () => {
+      const pending = makeStudentProof({
+        ready_for_review: true,
+        review_status: 'pending',
+        submitted_at: 10,
+        student_until: null,
+      });
+      mockStudentProofs = { has_active: false, pending, items: [pending] };
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByTestId('account-student-primary').props.children).toBe('In review');
+      expect(screen.queryByTestId('account-student-until')).toBeNull();
+      await disposeTestQueryClient(client);
+    });
+
+    it('uses Submit Student Proof (not New) for the empty-state student button', async () => {
+      const { client } = await renderAccountReady();
+
+      expect(screen.getByText('Submit Student Proof')).toBeTruthy();
+      expect(screen.queryByText('Submit New Student Proof')).toBeNull();
       await disposeTestQueryClient(client);
     });
   });

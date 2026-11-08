@@ -10,20 +10,32 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Linking,
 } from 'react-native';
+import { legalUrl } from '@/constants/legalUrls';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import { useAuth } from '@/context/auth';
+import { surfaceShadow } from '@/utils/surfaceShadow';
+import LevelModal from '@/components/Account/LevelModal';
+import StudentStatusModal from '@/components/Account/StudentStatusModal';
 import Button from '@/components/Buttons/Button';
-import LevelBandScale from '@/components/Level/LevelBandScale';
 import LoginOptions from '@/components/Login/LoginOptions';
 import ScreenHeader from '@/components/Navigation/ScreenHeader';
 import { fetchEventHistory } from '@/services/eventHistory';
 import { confirmAsync } from '@/services/confirm';
 import { ApiError } from '@/services/apiError';
+import {
+  findActiveProof,
+  findLapsedApprovedProof,
+  isAssessmentInReview,
+  isProofInReview,
+  levelAssessCta,
+} from '@/services/accountStatusCta';
+import { todayYmd } from '@/services/dateRange';
 import { identityListLabel } from '@/services/playerMapping';
 import {
   useIdentities,
@@ -31,12 +43,21 @@ import {
   useUnlinkIdentityMutation,
 } from '@/services/hooks/useIdentities';
 import { queryKeys } from '@/lib/queryClient';
-import { formatDateHuman } from '@/services/mappers';
-import { useCurrentLevel } from '@/services/hooks/useLevelAssessment';
+import { formatDateHuman, formatDateShort } from '@/services/mappers';
+import {
+  useCurrentLevel,
+  useLatestAssessment,
+  useLevelAssessmentStatus,
+} from '@/services/hooks/useLevelAssessment';
 import { useLevels } from '@/services/hooks/useLevels';
 import { useLevelFlow } from '@/services/hooks/useLevelFlow';
-import { eventDetailPath, studentProofPath } from '@/utils/eventPaths';
-import type { EventHistoryItem, Level, PlayerIdentity, PlayerLevel } from '@/types/api';
+import { useStudentProofs } from '@/services/hooks/useStudentProofs';
+import {
+  eventDetailPath,
+  levelAssessmentPath,
+  studentProofPath,
+} from '@/utils/eventPaths';
+import type { EventHistoryItem, PlayerIdentity } from '@/types/api';
 
 function InfoCard({
   label,
@@ -178,61 +199,6 @@ function IdentityDetailsModal({
   );
 }
 
-function LevelModal({
-  level,
-  levels,
-  visible,
-  starting,
-  error,
-  onClose,
-  onUpdate,
-}: {
-  level: PlayerLevel;
-  levels: Level[] | null;
-  visible: boolean;
-  starting: boolean;
-  error?: string | null;
-  /** Dismiss (Close / backdrop / back). Aborts a pending start without navigating. */
-  onClose: () => void;
-  onUpdate: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.modalBackdrop} onPress={onClose} testID="level-modal-backdrop">
-        <Pressable style={styles.modalCard} onPress={() => undefined} testID="level-modal">
-          <Text style={styles.levelModalBand} testID="level-modal-band">
-            {level.band_name ?? 'Your level'}
-          </Text>
-          <LevelBandScale bandName={level.band_name} level={level.level} levels={levels} />
-          <Text style={styles.levelModalNumber} testID="level-modal-level">
-            Level {level.level}
-          </Text>
-          {error ? (
-            <Text style={styles.unlinkError} testID="level-modal-error">
-              {error}
-            </Text>
-          ) : null}
-          <View style={styles.modalActions}>
-            <Button
-              label="Update level assessment"
-              onPress={onUpdate}
-              loading={starting}
-              testID="level-modal-update"
-            />
-            <Button
-              label="Close"
-              onPress={onClose}
-              style={styles.modalCloseButton}
-              labelStyle={styles.modalCloseLabel}
-              testID="level-modal-close"
-            />
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 function GuestAccountBody() {
   return (
     <View style={styles.guestBody} testID="account-guest-login">
@@ -245,8 +211,23 @@ function GuestAccountBody() {
         Join padel events, track tournaments, and connect with players
       </Text>
       <LoginOptions style={styles.guestLogin} />
-      <Text style={styles.guestFooter}>
-        By continuing, you agree to our Terms of Service
+      <Text style={styles.guestFooter} testID="account-guest-legal">
+        By continuing, you agree to our{' '}
+        <Text
+          style={styles.guestLegalLink}
+          testID="account-guest-terms-link"
+          onPress={() => void Linking.openURL(legalUrl('terms'))}
+        >
+          Terms of Service
+        </Text>
+        {' '}and{' '}
+        <Text
+          style={styles.guestLegalLink}
+          testID="account-guest-privacy-link"
+          onPress={() => void Linking.openURL(legalUrl('privacy'))}
+        >
+          Privacy Policy
+        </Text>
       </Text>
     </View>
   );
@@ -275,7 +256,7 @@ function ProfileAccountBody() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const viewer = user ? String(user.id) : 'guest';
-  const player = user?.user;
+  const player = user?.player;
   const [avatarError, setAvatarError] = useState(false);
   const [history, setHistory] = useState<EventHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -285,8 +266,12 @@ function ProfileAccountBody() {
   const [linkBusy, setLinkBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [levelModalOpen, setLevelModalOpen] = useState(false);
+  const [studentModalOpen, setStudentModalOpen] = useState(false);
 
   const { data: currentLevel } = useCurrentLevel();
+  const { data: latestAssessment } = useLatestAssessment();
+  const { data: assessmentStatus } = useLevelAssessmentStatus();
+  const { data: studentProofs } = useStudentProofs();
   const { data: levels } = useLevels(levelModalOpen);
   const {
     start: startLevelFlow,
@@ -306,9 +291,50 @@ function ProfileAccountBody() {
   );
 
   const nickname = user?.name ?? 'Player';
-  const userId = player ? `#${String(player.id_user).padStart(5, '0')}` : '—';
+  const userId = player
+    ? `#${String(player.id_user).padStart(5, '0')}`
+    : user?.id
+      ? `#${String(user.id).padStart(5, '0')}`
+      : '—';
   const emailDisplay = user?.email?.trim() ? user.email : 'Not set';
   const phoneDisplay = user?.phone?.trim() ? user.phone : 'Not set';
+
+  const assessmentInReview = isAssessmentInReview(latestAssessment);
+  const hasPriorAssessment =
+    (assessmentStatus?.overall.approved ?? 0) +
+      (assessmentStatus?.overall.rejected ?? 0) +
+      (assessmentStatus?.overall.discarded ?? 0) >
+      0 ||
+    (latestAssessment != null &&
+      (latestAssessment.submitted_at != null ||
+        latestAssessment.review_status === 'approved' ||
+        latestAssessment.review_status === 'rejected' ||
+        latestAssessment.review_status === 'discarded'));
+  const accountAssessCta = levelAssessCta({
+    pendingOrLatest: latestAssessment,
+    assessmentsForHistory: hasPriorAssessment
+      ? [
+          {
+            submitted_at: latestAssessment?.submitted_at ?? 1,
+            review_status: latestAssessment?.review_status ?? 'approved',
+          },
+        ]
+      : latestAssessment
+        ? [latestAssessment]
+        : [],
+    includeSeePending: false,
+  });
+
+  const today = todayYmd();
+  const studentItems = studentProofs?.items ?? [];
+  const activeStudent = studentProofs?.has_active
+    ? findActiveProof(studentItems, today)
+    : null;
+  const lapsedStudent =
+    !studentProofs?.has_active ? findLapsedApprovedProof(studentItems, today) : null;
+  const proofInReview = isProofInReview(studentProofs?.pending);
+  const studentPillWorthy =
+    activeStudent != null || lapsedStudent != null || proofInReview;
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -339,6 +365,16 @@ function ProfileAccountBody() {
   const handleUpdateLevel = async () => {
     const navigated = await startLevelFlow('assessment');
     if (navigated) setLevelModalOpen(false);
+  };
+
+  const openPendingAssessment = () => {
+    setLevelModalOpen(false);
+    router.push(levelAssessmentPath() as any);
+  };
+
+  const openStudentProofScreen = () => {
+    setStudentModalOpen(false);
+    router.push(studentProofPath() as any);
   };
 
   const handleLinkAnother = async () => {
@@ -443,21 +479,38 @@ function ProfileAccountBody() {
         </View>
       </View>
 
-      <View style={styles.levelSection}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My Level</Text>
         {currentLevel ? (
           <Pressable
             style={styles.levelPill}
             onPress={() => setLevelModalOpen(true)}
             testID="account-level-band"
           >
-            <Text style={styles.levelPillText}>
-              {currentLevel.band_name ?? `Level ${currentLevel.level}`}
-            </Text>
+            <View style={styles.pillTextCol}>
+              <Text style={styles.levelPillText}>
+                {currentLevel.band_name ?? `Level ${currentLevel.level}`}
+              </Text>
+              {assessmentInReview ? (
+                <Text style={styles.pillSecondary} testID="account-level-in-review">
+                  In review
+                </Text>
+              ) : null}
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={12} color={Colors.CREAM_60} />
+          </Pressable>
+        ) : assessmentInReview ? (
+          <Pressable
+            style={styles.levelPill}
+            onPress={() => router.push(levelAssessmentPath() as any)}
+            testID="account-level-in-review-pill"
+          >
+            <Text style={styles.levelPillText}>Your level assessment is in review...</Text>
             <MaterialCommunityIcons name="chevron-right" size={12} color={Colors.CREAM_60} />
           </Pressable>
         ) : (
           <Button
-            label="Assess my level"
+            label={accountAssessCta.label}
             onPress={() => void startLevelFlow('assessment')}
             loading={levelStarting}
             testID="account-assess-level"
@@ -467,13 +520,47 @@ function ProfileAccountBody() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Student Status</Text>
-        <Button
-          label="Submit student proof"
-          style={styles.linkButton}
-          labelStyle={styles.linkButtonLabel}
-          onPress={() => router.push(studentProofPath() as any)}
-          testID="account-student-proof"
-        />
+        {studentPillWorthy ? (
+          <Pressable
+            style={styles.levelPill}
+            onPress={() => setStudentModalOpen(true)}
+            testID="account-student-pill"
+          >
+            <View style={styles.pillTextCol}>
+              <Text style={styles.levelPillText} testID="account-student-primary">
+                {activeStudent
+                  ? 'Student'
+                  : lapsedStudent
+                    ? 'Expired'
+                    : 'In review'}
+              </Text>
+              {activeStudent?.student_until ? (
+                <Text style={styles.pillSecondary} testID="account-student-until">
+                  Until {formatDateShort(activeStudent.student_until)}
+                </Text>
+              ) : null}
+              {lapsedStudent?.student_until && !activeStudent ? (
+                <Text style={styles.pillSecondary} testID="account-student-until">
+                  Until {formatDateShort(lapsedStudent.student_until)}
+                </Text>
+              ) : null}
+              {proofInReview && activeStudent ? (
+                <Text style={styles.pillSecondary} testID="account-student-in-review">
+                  In review
+                </Text>
+              ) : null}
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={12} color={Colors.CREAM_60} />
+          </Pressable>
+        ) : (
+          <Button
+            label="Submit Student Proof"
+            style={styles.linkButton}
+            labelStyle={styles.linkButtonLabel}
+            onPress={() => router.push(studentProofPath() as any)}
+            testID="account-student-proof"
+          />
+        )}
       </View>
 
       <View style={styles.section}>
@@ -611,10 +698,31 @@ function ProfileAccountBody() {
           visible={levelModalOpen}
           starting={levelStarting}
           error={levelFlowError ? 'Could not continue. Please try again.' : null}
+          pendingOrLatest={latestAssessment}
+          assessmentsForHistory={
+            hasPriorAssessment
+              ? [
+                  {
+                    submitted_at: latestAssessment?.submitted_at ?? 1,
+                    review_status: latestAssessment?.review_status ?? 'approved',
+                  },
+                ]
+              : latestAssessment
+                ? [latestAssessment]
+                : []
+          }
           onClose={closeLevelModal}
-          onUpdate={() => void handleUpdateLevel()}
+          onAssess={() => void handleUpdateLevel()}
+          onSeePending={openPendingAssessment}
         />
       ) : null}
+
+      <StudentStatusModal
+        visible={studentModalOpen}
+        data={studentProofs}
+        onClose={() => setStudentModalOpen(false)}
+        onCta={openStudentProofScreen}
+      />
 
       <IdentityDetailsModal
         identity={selectedIdentity}
@@ -706,6 +814,10 @@ const styles = StyleSheet.create({
     color: Colors.CREAM_T,
     textAlign: 'center',
   },
+  guestLegalLink: {
+    color: Colors.BLUE,
+    textDecorationLine: 'underline',
+  },
 
   avatarSection: {
     flexDirection: 'row',
@@ -743,10 +855,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  levelSection: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-  },
   levelPill: {
     minHeight: 44,
     backgroundColor: Colors.GRAY,
@@ -755,24 +863,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  pillTextCol: {
+    flex: 1,
+    paddingRight: 8,
+    gap: 2,
   },
   levelPillText: {
     fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
     color: Colors.WHITE,
   },
-  levelModalBand: {
-    fontFamily: Fonts.FONT_MEDIUM,
-    fontSize: Fonts.HEADING_2,
-    color: Colors.WHITE,
-    textAlign: 'center',
-  },
-  levelModalNumber: {
+  pillSecondary: {
     fontFamily: Fonts.FONT_REGULAR,
-    fontSize: Fonts.BODY,
+    fontSize: Fonts.BODY_S,
     color: Colors.CREAM_60,
-    textAlign: 'center',
-    marginTop: 8,
   },
   section: {
     marginTop: 32,
@@ -858,8 +964,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.25)',
-    elevation: 10,
+    ...surfaceShadow(10, '0px 0px 10px rgba(0, 0, 0, 0.25)'),
     borderWidth: 1,
     borderColor: '#d9d9d9',
   },

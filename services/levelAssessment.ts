@@ -4,6 +4,7 @@
  *   GET   /app/my/level-assessment/status
  *   GET   /app/my/level-assessment/latest          (404 → null)
  *   GET   /app/my/level-assessment/current-level   (404 → null)
+ *   GET   /app/my/level-assessment/progress
  *   GET   /app/my/level-assessment/pending         (404 → null)
  *   POST  /app/my/level-assessment/pending         (create or return existing)
  *   PATCH /app/my/level-assessment/pending         ({ custom_fields })
@@ -24,6 +25,7 @@ import { ApiError } from "@/services/apiError";
 import { formDataFromUri, type FileMeta } from "@/services/upload";
 import type {
   LevelAssessmentStatus,
+  LevelProgress,
   PlayerLevel,
   PlayerLevelAssessment,
 } from "@/types/api";
@@ -74,6 +76,13 @@ export function fetchCurrentLevel(
   return getOrNull<PlayerLevel>(`${BASE}/current-level`, signal);
 }
 
+/** Merged player_levels + assessments timeline (deduped on the server). */
+export function fetchLevelProgress(
+  signal?: AbortSignal
+): Promise<LevelProgress> {
+  return apiGetEnvelope<LevelProgress>(`${BASE}/progress`, { signal });
+}
+
 // ---------- Mutations ----------
 
 /** POST pending: creates the draft, or returns the existing one (optionally writing answers). */
@@ -108,11 +117,14 @@ export async function loadLatestOrCreateAssessment(): Promise<PlayerLevelAssessm
 
 /** Write answers into the pending draft (rejected by the API once ready for review). */
 export function patchPendingAssessment(
-  customFields: CustomFieldsPayload
+  customFields: CustomFieldsPayload,
+  opts?: { signal?: AbortSignal }
 ): Promise<PlayerLevelAssessment> {
-  return apiPatch<PlayerLevelAssessment>(`${BASE}/pending`, {
-    custom_fields: customFields,
-  });
+  return apiPatch<PlayerLevelAssessment>(
+    `${BASE}/pending`,
+    { custom_fields: customFields },
+    opts
+  );
 }
 
 /** Lock the draft for review. Allowed even when no answers were given. */
@@ -134,16 +146,23 @@ export function discardAssessment(): Promise<unknown> {
 
 export async function uploadAssessmentProfileImage(
   uri: string,
-  opts?: FileMeta
+  opts?: FileMeta & { signal?: AbortSignal }
 ): Promise<PlayerLevelAssessment> {
+  const { signal, name, type } = opts ?? {};
   return apiUpload<PlayerLevelAssessment>(
     `${BASE}/pending/profile-image`,
-    await formDataFromUri("image", uri, opts)
+    await formDataFromUri("image", uri, { name, type }),
+    { signal }
   );
 }
 
 export function deleteAssessmentProfileImage(
-  id: number
+  id: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<PlayerLevelAssessment> {
-  return apiDelete<PlayerLevelAssessment>(`${BASE}/pending/profile-image/${id}`);
+  return apiDelete<PlayerLevelAssessment>(
+    `${BASE}/pending/profile-image/${id}`,
+    undefined,
+    opts
+  );
 }

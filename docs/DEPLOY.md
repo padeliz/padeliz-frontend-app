@@ -20,6 +20,11 @@ Deploy uses `scripts/ci/deploy-app-platform.sh`: fetch the **live** App Platform
 
 `EXPO_PUBLIC_*` values are **build-args** (baked into the web export). Server secrets are App Platform runtime env.
 
+Additional build-args:
+
+- `EXPO_PUBLIC_LEGAL_SITE_URL` — **required** sibling legal site (no code/Docker default). Staging/prod CI pass `https://staging.padeliz.ro` / `https://padeliz.ro`; local `.env.local` uses `http://localhost:4173` (static Compose).
+- `EXPO_PUBLIC_NOINDEX` — `true` on staging (`noindex, nofollow, noarchive, nosnippet, noimageindex` via `app/+html.tsx`); `false` on production (only `app.padeliz.ro` is search-indexable). Dockerfile runs `scripts/write-robots.sh`: staging Disallow-all + AI UA blocks; production Allow `*` + AI UA Disallow only.
+
 ## App identity
 
 | Env | App name | App ID |

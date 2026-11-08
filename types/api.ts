@@ -312,6 +312,20 @@ export interface AssessmentProfileImage {
   original_filename?: string | null;
 }
 
+/** Nested participation on a progress `player_level` row. */
+export interface PlayerLevelParticipationSummary {
+  id_participation: number;
+  event_id: number;
+  player_user_id: number;
+  inserted_at: number;
+  event: {
+    id_event: number;
+    name: string;
+    event_starts_at?: number;
+    event_ends_at?: number;
+  } | null;
+}
+
 /** A level the player holds (data of GET /app/my/level-assessment/current-level). */
 export interface PlayerLevel {
   id_player_level: number;
@@ -323,6 +337,26 @@ export interface PlayerLevel {
   event_participation_id: number | null;
   inserted_at: number;
   updated_at: number | null;
+  /** Present on progress timeline when loaded. */
+  assessment?: PlayerLevelAssessment | null;
+  participation?: PlayerLevelParticipationSummary | null;
+}
+
+/** One row of GET /app/my/level-assessment/progress. */
+export type LevelProgressItem =
+  | {
+      kind: "player_level";
+      inserted_at: number;
+      player_level: PlayerLevel;
+    }
+  | {
+      kind: "level_assessment";
+      inserted_at: number;
+      assessment: PlayerLevelAssessment;
+    };
+
+export interface LevelProgress {
+  items: LevelProgressItem[];
 }
 
 export interface PlayerLevelAssessment {

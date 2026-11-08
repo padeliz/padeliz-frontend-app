@@ -24,6 +24,7 @@ jobs:
           EXPO_PUBLIC_BASE_URL: http://localhost:8081
           EXPO_PUBLIC_SCHEME: padeliz-app://
           EXPO_PUBLIC_API_URL: http://localhost:8000/api/v1
+          EXPO_PUBLIC_LEGAL_SITE_URL: http://localhost:4173
         run: npx jest --ci --coverage=false --runInBand
 
   deploy:
@@ -64,6 +65,8 @@ jobs:
             EXPO_PUBLIC_BASE_URL=https://app.staging.padeliz.ro
             EXPO_PUBLIC_SCHEME=padeliz-app://
             EXPO_PUBLIC_API_URL=https://backend.staging.padeliz.ro/api/v1
+            EXPO_PUBLIC_LEGAL_SITE_URL=https://staging.padeliz.ro
+            EXPO_PUBLIC_NOINDEX=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

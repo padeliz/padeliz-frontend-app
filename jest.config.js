@@ -22,6 +22,7 @@ module.exports = {
   moduleNameMapper: {
     ...(expoPreset.moduleNameMapper || {}),
     '^@/(.*)$': '<rootDir>/$1',
+    '\\.svg$': '<rootDir>/__mocks__/svgMock.js',
   },
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/', '/.expo/'],

@@ -62,6 +62,8 @@ const DEV_LOGIN_EMAIL =
 
 type GoogleOAuthPurpose = "login" | "link";
 
+export type LoginModalReason = "gate" | "session";
+
 type AuthContextValue = {
   user: AppUser | null;
   /**
@@ -85,6 +87,12 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
   /** Re-fetch the authenticated player (GET /app/auth/me). */
   refreshMe: () => Promise<void>;
+  /** Open the shared root LoginModal (gated action or session expiry). */
+  requestLogin: (options?: { reason?: LoginModalReason }) => void;
+  /** Close the shared LoginModal without navigating. */
+  closeLoginModal: () => void;
+  loginModalVisible: boolean;
+  loginModalReason: LoginModalReason;
   /**
    * @deprecated Prefer the `services/` API client. Thin fetch wrapper that injects
    * the bearer token + Accept header against an absolute URL.
@@ -98,6 +106,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<AppUser | null>(null);
   const [isHydrating, setIsHydrating] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
+  const [loginModalVisible, setLoginModalVisible] = React.useState(false);
+  const [loginModalReason, setLoginModalReason] =
+    React.useState<LoginModalReason>("gate");
   const tokenRef = React.useRef<string | null>(null);
   const isWeb = Platform.OS === "web";
   const [request, response, promptAsync] = useAuthRequest(
@@ -157,11 +168,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   }, [applyToken]);
 
-  // Expose the token to the API client and register global 401 → sign-out.
+  const requestLogin = React.useCallback(
+    (options?: { reason?: LoginModalReason }) => {
+      setLoginModalReason(options?.reason ?? "gate");
+      setLoginModalVisible(true);
+    },
+    []
+  );
+
+  const closeLoginModal = React.useCallback(() => {
+    setLoginModalVisible(false);
+  }, []);
+
+  // Expose the token to the API client and register global 401 → sign-out + login modal.
   React.useEffect(() => {
     setTokenGetter(() => tokenRef.current);
     setUnauthorizedHandler(() => {
-      void clearSession();
+      void (async () => {
+        await clearSession();
+        setLoginModalReason("session");
+        setLoginModalVisible(true);
+      })();
     });
     return () => setUnauthorizedHandler(null);
   }, [clearSession]);
@@ -368,10 +395,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     linkGoogleIdentity,
     signOut,
     refreshMe,
+    requestLogin,
+    closeLoginModal,
+    loginModalVisible,
+    loginModalReason,
     fetchWithAuth,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

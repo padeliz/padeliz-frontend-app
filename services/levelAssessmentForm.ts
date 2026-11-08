@@ -480,3 +480,46 @@ export function fieldCodesForStep(step: number): AssessmentFieldCode[] | undefin
   }
   return undefined;
 }
+
+/**
+ * After a successful step save, advance baseline only for that step’s keys so
+ * concurrent edits on other steps are not wiped by a full HYDRATE.
+ */
+export function mergeBaselineForStep(
+  baseline: AssessmentFormState,
+  snapshot: AssessmentFormState,
+  step: number
+): AssessmentFormState {
+  if (step === 1) {
+    const nextRacket = { ...baseline.racket };
+    const sports = new Set([
+      ...baseline.selectedSports,
+      ...snapshot.selectedSports,
+    ]);
+    for (const sport of sports) {
+      if (snapshot.selectedSports.includes(sport)) {
+        nextRacket[sport] = { ...(snapshot.racket[sport] ?? EMPTY_RACKET) };
+      } else {
+        delete nextRacket[sport];
+      }
+    }
+    return {
+      ...baseline,
+      selectedSports: [...snapshot.selectedSports],
+      racket: nextRacket,
+    };
+  }
+  if (step === 2) {
+    return {
+      ...baseline,
+      bigTournamentDivision: snapshot.bigTournamentDivision,
+      yearOfBirth: snapshot.yearOfBirth,
+      playtomicId: snapshot.playtomicId,
+      rankedinId: snapshot.rankedinId,
+      gender: snapshot.gender,
+      instagramUsername: snapshot.instagramUsername,
+      facebookUsername: snapshot.facebookUsername,
+    };
+  }
+  return baseline;
+}

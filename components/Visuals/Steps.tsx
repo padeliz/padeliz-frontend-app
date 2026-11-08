@@ -9,8 +9,10 @@ type Props = {
   /** 1-indexed steps that can be pressed. */
   enabledSteps?: number[];
   onStepPress?: (step: number) => void;
-  /** 1-indexed step currently showing a save loader in its icon. */
-  loadingStep?: number | null;
+  /** 1-indexed steps currently showing a save loader in their icon. */
+  loadingSteps?: number[];
+  /** 1-indexed steps whose last save/upload failed (X icon). */
+  errorSteps?: number[];
   /**
    * When set, previous steps show a check only if listed here.
    * When omitted, any previous step (index < current) is treated as completed (registration).
@@ -24,7 +26,8 @@ export default function Steps({
   color = Colors.ORANGE,
   enabledSteps = [],
   onStepPress,
-  loadingStep = null,
+  loadingSteps = [],
+  errorSteps = [],
   completedSteps,
 }: Props) {
   return (
@@ -51,7 +54,8 @@ export default function Steps({
               stepNumber={stepNumber}
               color={color}
               enabled={enabled}
-              loading={loadingStep === stepNumber}
+              loading={loadingSteps.includes(stepNumber)}
+              error={errorSteps.includes(stepNumber)}
               onPress={
                 enabled && onStepPress ? () => onStepPress(stepNumber) : undefined
               }

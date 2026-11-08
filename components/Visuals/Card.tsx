@@ -1,5 +1,6 @@
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import * as Colors from '@/constants/Colors';
+import { surfaceShadow } from '@/utils/surfaceShadow';
 
 type CardVariant = 'light' | 'dark';
 
@@ -33,7 +34,6 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 12,
     padding: 16,
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
+    ...surfaceShadow(3, '0px 4px 8px rgba(0, 0, 0, 0.1)'),
   },
 });

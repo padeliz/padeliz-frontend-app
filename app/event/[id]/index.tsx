@@ -24,7 +24,6 @@ import DivisionGroupsList, {
 } from '@/components/Registration/DivisionGroupsList';
 import CancelRegistrationModal from '@/components/Registration/CancelRegistrationModal';
 import ShareReferralModal from '@/components/Registration/ShareReferralModal';
-import LoginModal from '@/components/Login/LoginModal';
 import AspectCover from '@/components/Events/AspectCover';
 import DivisionColorBadge from '@/components/Events/DivisionColorBadge';
 import { EventBadge } from '@/types/types';
@@ -110,7 +109,7 @@ export default function EventDetailScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { width: windowWidth } = useWindowDimensions();
-  const { user } = useAuth();
+  const { user, requestLogin } = useAuth();
   const isAuthed = Boolean(user);
   const descriptionContentWidth = windowWidth - 32;
   const htmlTagsStyles = useMemo(
@@ -177,7 +176,6 @@ export default function EventDetailScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<'date' | 'location' | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -656,7 +654,7 @@ export default function EventDetailScreen() {
               const target = cta.target;
               if (!target) return;
               if (!isAuthed) {
-                setLoginOpen(true);
+                requestLogin({ reason: 'gate' });
                 return;
               }
               // Assess my level / Register: Discovery first when it is incomplete.
@@ -703,8 +701,6 @@ export default function EventDetailScreen() {
         registrationAllowedUntil={event.registration_allowed_until}
         onClose={() => setShareOpen(false)}
       />
-
-      <LoginModal visible={loginOpen} onClose={() => setLoginOpen(false)} />
 
       <Modal
         visible={infoModal != null}

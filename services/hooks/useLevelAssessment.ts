@@ -7,6 +7,7 @@ import {
   fetchCurrentLevel,
   fetchLatestAssessment,
   fetchLevelAssessmentStatus,
+  fetchLevelProgress,
   loadLatestOrCreateAssessment,
   markAssessmentReady,
   openOrCreatePendingAssessment,
@@ -67,6 +68,19 @@ export function useCurrentLevel(enabled = true) {
   );
 }
 
+/** My Progress timeline (levels + assessments). */
+export function useLevelProgress(enabled = true) {
+  const { viewer, isAuthed } = useViewer();
+  return toQueryState(
+    useQuery({
+      queryKey: queryKeys.levelAssessment.progress(viewer),
+      queryFn: ({ signal }) => fetchLevelProgress(signal),
+      enabled: enabled && isAuthed,
+      staleTime: ASSESSMENT_STALE_TIME,
+    })
+  );
+}
+
 function useInvalidateAssessment() {
   const queryClient = useQueryClient();
   const { viewer } = useViewer();
@@ -103,11 +117,16 @@ export function useCreatePendingAssessmentMutation() {
   });
 }
 
+export type SaveAssessmentVars = {
+  customFields: CustomFieldsPayload;
+  signal?: AbortSignal;
+};
+
 export function useSaveAssessmentMutation() {
   const invalidate = useInvalidateAssessment();
   return useMutation({
-    mutationFn: (customFields: CustomFieldsPayload) =>
-      patchPendingAssessment(customFields),
+    mutationFn: ({ customFields, signal }: SaveAssessmentVars) =>
+      patchPendingAssessment(customFields, { signal }),
     onSuccess: () => void invalidate(),
   });
 }
@@ -136,18 +155,30 @@ export function useDiscardAssessmentMutation() {
   });
 }
 
+export type UploadAssessmentImageVars = {
+  uri: string;
+  signal?: AbortSignal;
+};
+
 export function useUploadAssessmentImageMutation() {
   const invalidate = useInvalidateAssessment();
   return useMutation({
-    mutationFn: (uri: string) => uploadAssessmentProfileImage(uri),
+    mutationFn: ({ uri, signal }: UploadAssessmentImageVars) =>
+      uploadAssessmentProfileImage(uri, { signal }),
     onSuccess: () => void invalidate(),
   });
 }
 
+export type DeleteAssessmentImageVars = {
+  id: number;
+  signal?: AbortSignal;
+};
+
 export function useDeleteAssessmentImageMutation() {
   const invalidate = useInvalidateAssessment();
   return useMutation({
-    mutationFn: (id: number) => deleteAssessmentProfileImage(id),
+    mutationFn: ({ id, signal }: DeleteAssessmentImageVars) =>
+      deleteAssessmentProfileImage(id, { signal }),
     onSuccess: () => void invalidate(),
   });
 }
