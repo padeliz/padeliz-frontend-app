@@ -3,6 +3,7 @@ import { View, Text, Pressable, Modal, StyleSheet, ScrollView } from 'react-nati
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
+import { surfaceShadow } from '@/utils/surfaceShadow';
 
 type Option = { label: string; value: string };
 
@@ -111,8 +112,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     minWidth: 180,
-    boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.25)',
-    elevation: 5,
+    ...surfaceShadow(5, '0px 2px 10px rgba(0, 0, 0, 0.25)'),
   },
   dropdownScroll: {
     maxHeight: 360,

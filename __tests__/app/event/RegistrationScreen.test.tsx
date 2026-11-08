@@ -37,11 +37,14 @@ import {
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
 const mockPush = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
+let mockParams: Record<string, string> = { eventId: '42' };
 
 jest.mock('expo-router', () =>
   require('@/testing/expoRouterMock').createExpoRouterMock({
-    useLocalSearchParams: () => ({ eventId: '42' }),
+    useLocalSearchParams: () => mockParams,
     useRouter: () => ({ push: mockPush, replace: mockReplace, back: mockBack }),
+    useNavigation: () => ({ canGoBack: mockCanGoBack }),
   })
 );
 
@@ -191,6 +194,8 @@ function renderScreen() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams = { eventId: '42' };
+  mockCanGoBack.mockReturnValue(true);
   mockEvent = makeEvent();
   mockCurrentLevel = makePlayerLevel();
   mockBankSettings = null;
@@ -264,6 +269,40 @@ describe('wizard shell', () => {
     expect(screen.queryByTestId('wizard-step-3')).toBeNull();
     expect(screen.getByText('Choose Division')).toBeTruthy();
     expect(screen.queryByText('Order summary')).toBeNull();
+  });
+
+  it('has no Finish it later / Close leave footer', () => {
+    renderScreen();
+    expect(screen.queryByText('Finish it later')).toBeNull();
+    expect(screen.queryByTestId('wizard-leave-footer')).toBeNull();
+    expect(screen.queryByTestId('assessment-finish-later')).toBeNull();
+    expect(screen.queryByTestId('student-proof-leave')).toBeNull();
+  });
+
+  it('header back uses router.back when the stack can go back', () => {
+    mockCanGoBack.mockReturnValue(true);
+    renderScreen();
+    fireEvent.press(screen.getByTestId('screen-header-back'));
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('header back replaces event detail when stack is empty and eventId is known', () => {
+    mockCanGoBack.mockReturnValue(false);
+    mockParams = { eventId: '42' };
+    renderScreen();
+    fireEvent.press(screen.getByTestId('screen-header-back'));
+    expect(mockReplace).toHaveBeenCalledWith('/event/42/tour-org-minitour-21');
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('header back replaces Account when stack is empty and eventId is missing', () => {
+    mockCanGoBack.mockReturnValue(false);
+    mockParams = {};
+    renderScreen();
+    fireEvent.press(screen.getByTestId('screen-header-back'));
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/account');
+    expect(mockBack).not.toHaveBeenCalled();
   });
 });
 

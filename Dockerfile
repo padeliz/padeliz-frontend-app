@@ -13,12 +13,20 @@ COPY . .
 ARG EXPO_PUBLIC_BASE_URL
 ARG EXPO_PUBLIC_SCHEME=padeliz-app://
 ARG EXPO_PUBLIC_API_URL
+ARG EXPO_PUBLIC_LEGAL_SITE_URL
+ARG EXPO_PUBLIC_NOINDEX=false
 ENV EXPO_PUBLIC_BASE_URL=$EXPO_PUBLIC_BASE_URL \
     EXPO_PUBLIC_SCHEME=$EXPO_PUBLIC_SCHEME \
     EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL \
+    EXPO_PUBLIC_LEGAL_SITE_URL=$EXPO_PUBLIC_LEGAL_SITE_URL \
+    EXPO_PUBLIC_NOINDEX=$EXPO_PUBLIC_NOINDEX \
     NODE_ENV=production
 
-RUN npx expo export --platform web
+RUN if [ -z "$EXPO_PUBLIC_LEGAL_SITE_URL" ]; then \
+      echo "EXPO_PUBLIC_LEGAL_SITE_URL build-arg is required" >&2; \
+      exit 1; \
+    fi \
+ && bash scripts/write-robots.sh && npx expo export --platform web
 
 FROM node:20-bookworm-slim
 

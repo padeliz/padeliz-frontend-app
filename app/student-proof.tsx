@@ -5,7 +5,7 @@
  * or delete a file individually. Editable while pending && !ready_for_review; locked (reopenable)
  * once ready.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -17,13 +17,16 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
 import Button from '@/components/Buttons/Button';
 import ScreenHeader from '@/components/Navigation/ScreenHeader';
 import StatusBanner from '@/components/Feedback/StatusBanner';
 import PhotoUploadSlot from '@/components/LevelAssessment/PhotoUploadSlot';
+import WizardLeaveFooter, {
+  WIZARD_LEAVE_FOOTER_SCROLL_EXTRA,
+} from '@/components/Navigation/WizardLeaveFooter';
 import {
   useAddStudentProofFileMutation,
   useCreateStudentProofMutation,
@@ -44,6 +47,7 @@ function errorMessage(e: unknown): string {
 
 export default function StudentProofScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data, loading, refetch } = useStudentProofs();
   const createMutation = useCreateStudentProofMutation();
   const updateDateMutation = useUpdateStudentProofDateMutation();
@@ -166,16 +170,34 @@ export default function StudentProofScreen() {
 
   const latestRejected = data?.items.find((i) => i.review_status === 'rejected');
 
+  const leaveScreen = useCallback(() => {
+    if (navigation.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)/account' as any);
+  }, [navigation, router]);
+
+  const leaveLabel: 'Finish it later' | 'Close' =
+    editable && !done ? 'Finish it later' : 'Close';
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader title="Student Proof" variant="stack" onBack={() => router.back()} />
+      <ScreenHeader title="Student Proof" variant="stack" onBack={leaveScreen} />
 
       {loading ? (
         <View style={styles.centered} testID="student-proof-loading">
           <ActivityIndicator color={Colors.BLUE} />
         </View>
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: 32 + WIZARD_LEAVE_FOOTER_SCROLL_EXTRA },
+          ]}
+        >
           <Text style={styles.heading}>Prove your student status</Text>
           <Text style={styles.subtitle}>
             Upload up to {MAX_STUDENT_PROOF_FILES} photos of your student ID and tell us until when
@@ -224,7 +246,6 @@ export default function StudentProofScreen() {
                 ))}
               </View>
               <View style={styles.actions}>
-                <Button label="Done" onPress={() => router.back()} testID="student-proof-done" />
                 <Button
                   label="Reopen to edit"
                   variant="secondary"
@@ -353,6 +374,12 @@ export default function StudentProofScreen() {
             </View>
           ) : null}
         </ScrollView>
+        <WizardLeaveFooter
+          label={leaveLabel}
+          onPress={leaveScreen}
+          testID="student-proof-leave"
+        />
+        </>
       )}
     </SafeAreaView>
   );

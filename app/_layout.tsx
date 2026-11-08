@@ -16,6 +16,7 @@ import { AppState, Platform, type AppStateStatus } from "react-native";
 import { focusManager, QueryClientProvider } from "@tanstack/react-query";
 import { createAppQueryClient } from "@/lib/queryClient";
 import { AuthProvider, useAuth } from "@/context/auth";
+import AuthLoginModalHost from "@/components/Login/AuthLoginModalHost";
 import { handleReferralUrl } from "@/services/referralRouting";
 import { ROOT_STACK_SCREENS } from "@/utils/rootStackScreens";
 
@@ -93,6 +94,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AuthLoginModalHost />
         <RootNavigator />
       </AuthProvider>
     </QueryClientProvider>

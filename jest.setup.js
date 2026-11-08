@@ -1,5 +1,10 @@
 /* global jest */
 
+// Test fixture for required sibling legal site URL (app runtime stays fail-closed).
+if (!process.env.EXPO_PUBLIC_LEGAL_SITE_URL || !String(process.env.EXPO_PUBLIC_LEGAL_SITE_URL).trim()) {
+  process.env.EXPO_PUBLIC_LEGAL_SITE_URL = 'http://localhost:4173';
+}
+
 const { configure } = require('@testing-library/react-native');
 configure({ asyncUtilTimeout: 5000 });
 

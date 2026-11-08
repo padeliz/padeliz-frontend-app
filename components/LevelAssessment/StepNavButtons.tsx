@@ -8,6 +8,7 @@ type Props = {
   onForward?: () => void;
   forwardLabel?: string;
   forwardDisabled?: boolean;
+  backDisabled?: boolean;
   isFinalForward?: boolean; // true = filled BLUE button instead of bordered
   loading?: boolean;
 };
@@ -18,20 +19,27 @@ export default function StepNavButtons({
   onForward,
   forwardLabel,
   forwardDisabled,
+  backDisabled,
   isFinalForward,
   loading = false,
 }: Props) {
+  const backInert = Boolean(loading || backDisabled);
+
   return (
     <View style={styles.container}>
       {onBack && backLabel ? (
         <Pressable
           testID="step-back"
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, backInert && styles.buttonDisabled]}
           onPress={onBack}
-          disabled={loading}
+          disabled={backInert}
         >
-          <Text style={styles.smallLabelLeft}>Go back to</Text>
-          <Text style={styles.mainLabelLeft}>{backLabel}</Text>
+          <Text style={[styles.smallLabelLeft, backInert && styles.smallLabelDisabled]}>
+            Go back to
+          </Text>
+          <Text style={[styles.mainLabelLeft, backInert && styles.mainLabelDisabled]}>
+            {backLabel}
+          </Text>
         </Pressable>
       ) : (
         <View />
@@ -55,7 +63,10 @@ export default function StepNavButtons({
           <Text style={styles.mainLabelRight}>{forwardLabel}</Text>
         </Pressable>
       ) : forwardDisabled && forwardLabel ? (
-        <View style={[styles.button, styles.buttonRight, styles.buttonDisabled]}>
+        <View
+          style={[styles.button, styles.buttonRight, styles.buttonDisabled]}
+          testID="step-forward-disabled"
+        >
           <Text style={styles.smallLabelDisabled}>Continue to</Text>
           <Text style={styles.mainLabelDisabled}>{forwardLabel}</Text>
         </View>

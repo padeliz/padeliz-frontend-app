@@ -1,5 +1,6 @@
 import {
   createPendingAssessment,
+  deleteAssessmentProfileImage,
   fetchCurrentLevel,
   fetchPendingAssessment,
   loadLatestOrCreateAssessment,
@@ -93,9 +94,31 @@ describe('level assessment service', () => {
     });
 
     await patchPendingAssessment({ playtomic_id: '1' });
-    expect(mockPatch).toHaveBeenCalledWith('/app/my/level-assessment/pending', {
-      custom_fields: { playtomic_id: '1' },
-    });
+    expect(mockPatch).toHaveBeenCalledWith(
+      '/app/my/level-assessment/pending',
+      { custom_fields: { playtomic_id: '1' } },
+      undefined
+    );
+  });
+
+  it('forwards AbortSignal on patch, upload, and delete', async () => {
+    const signal = new AbortController().signal;
+    await patchPendingAssessment({ playtomic_id: '1' }, { signal });
+    expect(mockPatch).toHaveBeenCalledWith(
+      '/app/my/level-assessment/pending',
+      { custom_fields: { playtomic_id: '1' } },
+      { signal }
+    );
+
+    await deleteAssessmentProfileImage(9, { signal });
+    expect(mockDelete).toHaveBeenCalledWith(
+      '/app/my/level-assessment/pending/profile-image/9',
+      undefined,
+      { signal }
+    );
+
+    await uploadAssessmentProfileImage('file:///tmp/a.jpg', { signal });
+    expect(mockUpload.mock.calls.at(-1)?.[2]).toEqual({ signal });
   });
 
   it('marks ready and reopens via the pending endpoints', async () => {

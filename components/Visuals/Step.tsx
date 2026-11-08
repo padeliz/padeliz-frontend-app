@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
@@ -14,6 +15,8 @@ type Props = {
   onPress?: () => void;
   /** Replace the step icon/number with a loader while that step is saving. */
   loading?: boolean;
+  /** Show a failure X when that step’s last save/upload failed (loading wins over error). */
+  error?: boolean;
 };
 
 export default function Step({
@@ -26,35 +29,45 @@ export default function Step({
   enabled = false,
   onPress,
   loading = false,
+  error = false,
 }: Props) {
-  const circleColor = isCompleted || isCurrent || loading ? color : Colors.CREAM_20;
-  const labelColor = isCurrent || loading ? color : Colors.CREAM;
+  const circleColor =
+    isCompleted || isCurrent || loading || error
+      ? error && !loading
+        ? Colors.RED
+        : color
+      : Colors.CREAM_20;
+  const labelColor = isCurrent || loading || error ? (error && !loading ? Colors.RED : color) : Colors.CREAM;
+
+  let icon: ReactNode;
+  if (loading) {
+    icon = (
+      <ActivityIndicator
+        color={Colors.WHITE}
+        size="small"
+        testID={`wizard-step-${stepNumber}-loading`}
+      />
+    );
+  } else if (error) {
+    icon = (
+      <MaterialCommunityIcons
+        name="close"
+        size={Fonts.BODY_S}
+        color={Colors.WHITE}
+        testID={`wizard-step-${stepNumber}-error`}
+      />
+    );
+  } else if (isCompleted) {
+    icon = <MaterialCommunityIcons name="check" size={Fonts.BODY_S} color={Colors.WHITE} />;
+  } else if (isCurrent && isFinalStep) {
+    icon = <MaterialCommunityIcons name="flag" size={Fonts.BODY_S} color={Colors.WHITE} />;
+  } else {
+    icon = <Text style={styles.number}>{stepNumber}</Text>;
+  }
+
   const content = (
     <>
-      <View style={[styles.circle, { backgroundColor: circleColor }]}>
-        {loading ? (
-          <ActivityIndicator
-            color={Colors.WHITE}
-            size="small"
-            testID={`wizard-step-${stepNumber}-loading`}
-          />
-        ) : (
-          <>
-            {isCompleted && (
-              <MaterialCommunityIcons name="check" size={Fonts.BODY_S} color={Colors.WHITE} />
-            )}
-            {isCurrent && isFinalStep && (
-              <MaterialCommunityIcons name="flag" size={Fonts.BODY_S} color={Colors.WHITE} />
-            )}
-            {isCurrent && !isFinalStep && (
-              <Text style={styles.number}>{stepNumber}</Text>
-            )}
-            {!isCompleted && !isCurrent && (
-              <Text style={styles.number}>{stepNumber}</Text>
-            )}
-          </>
-        )}
-      </View>
+      <View style={[styles.circle, { backgroundColor: circleColor }]}>{icon}</View>
       <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
     </>
   );

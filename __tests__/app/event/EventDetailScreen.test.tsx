@@ -17,7 +17,14 @@ import { productDateTimeToDate } from '@/services/dateRange';
 const mockPush = jest.fn();
 
 jest.mock('@/context/auth', () => ({
-  useAuth: () => ({ user: { id: '1', email: 'a@b.com', name: 'Test', player: {} }, isLoading: false }),
+  useAuth: () => ({
+    user: { id: '1', email: 'a@b.com', name: 'Test', player: {} },
+    isLoading: false,
+    requestLogin: jest.fn(),
+    closeLoginModal: jest.fn(),
+    loginModalVisible: false,
+    loginModalReason: 'gate',
+  }),
 }));
 
 

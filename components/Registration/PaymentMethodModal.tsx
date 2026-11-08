@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Colors from '@/constants/Colors';
@@ -31,10 +32,10 @@ const METHODS: {
   id: RegistrationPaymentMethod;
   name: string;
   description: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'] | null;
 }[] = [
   { id: 'bank_transfer', name: 'Bank Transfer', description: 'Manual transfer and proof upload', icon: 'bank' },
-  { id: 'netopia', name: 'Netopia Payments', description: 'Direct payment gateway', icon: 'credit-card' },
+  { id: 'netopia', name: 'Netopia Payments', description: 'Direct payment gateway', icon: null },
 ];
 
 function bankRows(settings: BankTransferSettings): { label: string; value: string }[] {
@@ -99,7 +100,21 @@ export default function PaymentMethodModal({
                       onPress={() => pick(method.id)}
                       testID={`pay-method-${method.id}`}
                     >
-                      <MaterialCommunityIcons name={method.icon} size={18} color={Colors.WHITE} />
+                      {method.id === 'netopia' ? (
+                        <Image
+                          testID="pay-method-netopia-logo"
+                          source={require('@/assets/images/logos/netopia-payments-vertical-white.png')}
+                          style={styles.netopiaLogo}
+                          resizeMode="contain"
+                          accessibilityLabel="Netopia Payments"
+                        />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name={method.icon!}
+                          size={18}
+                          color={Colors.WHITE}
+                        />
+                      )}
                       <View style={styles.methodInfo}>
                         <Text style={styles.methodName}>{method.name}</Text>
                         <Text style={styles.methodDescription}>{method.description}</Text>
@@ -211,6 +226,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.GRAY,
     borderRadius: 8,
     padding: 14,
+  },
+  netopiaLogo: {
+    width: 36,
+    height: 36,
   },
   methodInfo: { flex: 1, gap: 4 },
   methodName: {

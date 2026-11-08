@@ -16,7 +16,8 @@ import ScreenHeader from "@/components/Navigation/ScreenHeader";
 import EventCard from "@/components/Events/EventCard";
 import EventsFilterChips from "@/components/Events/EventsFilterChips";
 import StatusBanner from "@/components/Feedback/StatusBanner";
-import LoginModal from "@/components/Login/LoginModal";
+import ComplianceLogosRow from "@/components/Compliance/ComplianceLogosRow";
+import LegalLinksRow from "@/components/Compliance/LegalLinksRow";
 import { useAuth } from "@/context/auth";
 import { eventToCard } from "@/services/mappers";
 import {
@@ -48,7 +49,7 @@ export default function EventsList({
   title = "Events",
   onSelectEvent,
 }: Props) {
-  const { user } = useAuth();
+  const { user, requestLogin } = useAuth();
   const isAuthed = Boolean(user);
   const userId = user?.id ?? null;
   const prevUserIdRef = useRef(userId);
@@ -61,7 +62,6 @@ export default function EventsList({
   const [filtersByTab, setFiltersByTab] = useState(() =>
     initialFiltersByTab(isAuthed)
   );
-  const [loginOpen, setLoginOpen] = useState(false);
   const [clubsOpen, setClubsOpen] = useState(false);
   const [filterOptions, setFilterOptions] = useState<EventFilterOptions | null>(
     null
@@ -142,7 +142,7 @@ export default function EventsList({
 
   const onMembershipToggle = () => {
     if (!isAuthed) {
-      setLoginOpen(true);
+      requestLogin({ reason: "gate" });
       return;
     }
     updateFilters({
@@ -193,14 +193,26 @@ export default function EventsList({
       {isInitialLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator color={Colors.BLUE} />
+          <View style={styles.complianceBlock}>
+            <ComplianceLogosRow />
+            <LegalLinksRow />
+          </View>
         </View>
       ) : error && events.length === 0 ? (
-        <View style={styles.centered}>
-          <StatusBanner variant="error" message={error.message} />
-          <Pressable style={styles.retryButton} onPress={refetch}>
-            <Text style={styles.retryLabel}>Try again</Text>
-          </Pressable>
-        </View>
+        <ScrollView
+          testID="events-list-scroll"
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.centeredInScroll}>
+            <StatusBanner variant="error" message={error.message} />
+            <Pressable style={styles.retryButton} onPress={refetch}>
+              <Text style={styles.retryLabel}>Try again</Text>
+            </Pressable>
+          </View>
+          <ComplianceLogosRow />
+          <LegalLinksRow />
+        </ScrollView>
       ) : (
         <ScrollView
           testID="events-list-scroll"
@@ -236,10 +248,11 @@ export default function EventsList({
               )}
             </Pressable>
           )}
+
+          <ComplianceLogosRow />
+          <LegalLinksRow />
         </ScrollView>
       )}
-
-      <LoginModal visible={loginOpen} onClose={() => setLoginOpen(false)} />
 
       <ClubsSheet
         visible={clubsOpen}
@@ -334,6 +347,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+  },
+  centeredInScroll: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+  },
+  complianceBlock: {
+    marginTop: "auto" as const,
+    width: "100%",
   },
   scrollContent: {
     padding: 16,

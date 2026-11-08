@@ -26,6 +26,31 @@ describe('LoginModal', () => {
     mockSignIn.mockResolvedValue(undefined);
   });
 
+  it('renders custom session-expired title and closes only via onClose (no router)', () => {
+    const onClose = jest.fn();
+    const { rerender } = render(
+      <LoginModal
+        visible
+        onClose={onClose}
+        title="Session expired"
+        subtitle="Sign in again to continue. You will stay on this screen after signing in."
+      />
+    );
+
+    expect(screen.getByText('Session expired')).toBeTruthy();
+    fireEvent.press(screen.getByText('Sign in with Google'));
+    mockUser = { id: '1' };
+    rerender(
+      <LoginModal
+        visible
+        onClose={onClose}
+        title="Session expired"
+        subtitle="Sign in again to continue. You will stay on this screen after signing in."
+      />
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('does not close when Google sign-in is pressed', () => {
     const onClose = jest.fn();
     render(<LoginModal visible onClose={onClose} />);

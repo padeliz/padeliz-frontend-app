@@ -4,7 +4,7 @@
  * Step 1 drafts divisions locally, then Reserve creates unpaid regs + open checkout.
  * Step 2 shows multi-checkout payment boxes (Pay for it → method modal). Step 3 is status.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Colors from '@/constants/Colors';
 import * as Fonts from '@/constants/Fonts';
@@ -324,6 +324,7 @@ export default function RegistrationScreen() {
     initialStep?: string;
   }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
 
   const eventId = Number(eventIdParam);
@@ -526,9 +527,21 @@ export default function RegistrationScreen() {
     if (eventId) {
       router.replace(eventDetailPath(eventId, event?.slug) as any);
     } else {
-      router.replace('/' as any);
+      router.replace('/(tabs)/account' as any);
     }
   };
+
+  const leaveRegistration = useCallback(() => {
+    if (navigation.canGoBack()) {
+      router.back();
+      return;
+    }
+    if (eventId) {
+      router.replace(eventDetailPath(eventId, event?.slug) as any);
+      return;
+    }
+    router.replace('/(tabs)/account' as any);
+  }, [navigation, router, eventId, event?.slug]);
 
   const refreshPaymentData = async () => {
     const openId = openCheckoutId(registrations) ?? checkoutId;
@@ -548,7 +561,7 @@ export default function RegistrationScreen() {
     <ScreenHeader
       title="Registration Process"
       variant="stack"
-      onBack={() => router.back()}
+      onBack={leaveRegistration}
     />
   );
 
@@ -925,7 +938,7 @@ export default function RegistrationScreen() {
       setCurrentStep(1);
       return;
     }
-    router.back();
+    leaveRegistration();
   };
 
   const handleForward = () => {

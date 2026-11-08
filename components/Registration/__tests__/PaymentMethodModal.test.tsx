@@ -20,4 +20,19 @@ describe('PaymentMethodModal', () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByTestId('close-payment-method')).toBeDisabled();
   });
+
+  it('shows vertical Netopia logo for the netopia payment method', () => {
+    render(
+      <PaymentMethodModal
+        visible
+        bankSettings={null}
+        onClose={jest.fn()}
+        onStartNetopia={jest.fn()}
+        onSubmitBankProof={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('pay-method-netopia')).toBeTruthy();
+    expect(screen.getByTestId('pay-method-netopia-logo')).toBeTruthy();
+  });
 });

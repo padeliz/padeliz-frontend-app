@@ -39,10 +39,13 @@ export default function Button({
   labelStyle,
 }: Props) {
   const isDisabled = disabled || loading || variant === 'disabled';
+  const showGrayDisabled = (disabled || variant === 'disabled') && !loading;
+  const surfaceVariant: ButtonVariant = showGrayDisabled ? 'disabled' : variant;
+
   return (
     <Pressable
       testID={testID}
-      style={[styles.base, variantStyles[variant], style]}
+      style={[styles.base, variantStyles[surfaceVariant], style]}
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
@@ -57,7 +60,15 @@ export default function Button({
         ) : (
           <>
             {icon}
-            <Text style={[styles.label, labelStyle]}>{label}</Text>
+            <Text
+              style={[
+                styles.label,
+                showGrayDisabled && styles.labelDisabled,
+                labelStyle,
+              ]}
+            >
+              {label}
+            </Text>
           </>
         )}
       </View>
@@ -74,8 +85,8 @@ const variantStyles = StyleSheet.create({
     backgroundColor: Colors.CREAM_10,
   },
   disabled: {
-    backgroundColor: Colors.BLUE,
-    opacity: 0.5,
+    backgroundColor: Colors.INACTIVE,
+    opacity: 1,
   },
 });
 
@@ -96,5 +107,8 @@ const styles = StyleSheet.create({
     color: Colors.WHITE,
     fontFamily: Fonts.FONT_MEDIUM,
     fontSize: Fonts.BODY,
+  },
+  labelDisabled: {
+    color: Colors.DARK_GRAY,
   },
 });

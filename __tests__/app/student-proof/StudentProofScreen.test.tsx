@@ -7,9 +7,13 @@ import StudentProofScreen from '@/app/student-proof';
 import { makeStudentProof, makeStudentProofFile } from '@/testing/fixtures';
 import type { StudentProofsIndex } from '@/types/api';
 
+const mockReplace = jest.fn();
+const mockBack = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
 jest.mock('expo-router', () =>
   require('@/testing/expoRouterMock').createExpoRouterMock({
-    useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+    useRouter: () => ({ push: jest.fn(), replace: mockReplace, back: mockBack }),
+    useNavigation: () => ({ canGoBack: mockCanGoBack }),
   })
 );
 
@@ -76,6 +80,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockIndex = { has_active: false, pending: null, items: [] };
   mockAddFilePending = false;
+  mockCanGoBack.mockReturnValue(true);
 });
 let testClient: ReturnType<typeof renderWithQueryClient>['client'] | null = null;
 afterEach(async () => {
@@ -373,5 +378,37 @@ describe('Student proof screen — locked, reopen, discard', () => {
     };
     renderScreen();
     expect(screen.getByText(/Blurry photo/)).toBeTruthy();
+  });
+
+  it('shows Finish it later for editable drafts and no Done button', () => {
+    mockIndex = { has_active: false, pending: pendingWithFiles(1), items: [] };
+    renderScreen();
+
+    expect(screen.getByText('Finish it later')).toBeTruthy();
+    expect(screen.getByTestId('student-proof-leave')).toBeTruthy();
+    expect(screen.queryByText('Done')).toBeNull();
+  });
+
+  it('shows Close for locked proofs and no Done button', () => {
+    mockIndex = {
+      has_active: false,
+      pending: pendingWithFiles(1, { ready_for_review: true }),
+      items: [],
+    };
+    renderScreen();
+
+    expect(screen.getByText('Close')).toBeTruthy();
+    expect(screen.queryByText('Finish it later')).toBeNull();
+    expect(screen.queryByText('Done')).toBeNull();
+  });
+
+  it('empty-stack leave replaces Account', () => {
+    mockCanGoBack.mockReturnValue(false);
+    mockIndex = { has_active: false, pending: pendingWithFiles(1), items: [] };
+    renderScreen();
+
+    fireEvent.press(screen.getByTestId('student-proof-leave'));
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/account');
+    expect(mockBack).not.toHaveBeenCalled();
   });
 });

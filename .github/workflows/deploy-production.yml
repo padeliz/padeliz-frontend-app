@@ -46,6 +46,8 @@ jobs:
             EXPO_PUBLIC_BASE_URL=https://app.padeliz.ro
             EXPO_PUBLIC_SCHEME=padeliz-app://
             EXPO_PUBLIC_API_URL=https://backend.padeliz.ro/api/v1
+            EXPO_PUBLIC_LEGAL_SITE_URL=https://padeliz.ro
+            EXPO_PUBLIC_NOINDEX=false
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

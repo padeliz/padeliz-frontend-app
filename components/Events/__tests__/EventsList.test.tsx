@@ -6,7 +6,14 @@ import { fetchFilterOptions, type EventListFilters } from '@/services/events';
 let mockUser: { id: string } | null = null;
 
 jest.mock('@/context/auth', () => ({
-  useAuth: () => ({ user: mockUser, isLoading: false }),
+  useAuth: () => ({
+    user: mockUser,
+    isLoading: false,
+    requestLogin: jest.fn(),
+    closeLoginModal: jest.fn(),
+    loginModalVisible: false,
+    loginModalReason: 'gate',
+  }),
 }));
 
 const mockUseEventsPager = jest.fn(

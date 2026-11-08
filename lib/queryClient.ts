@@ -63,6 +63,8 @@ export const queryKeys = {
     pending: (viewer: Viewer) => ['levelAssessment', viewer, 'pending'] as const,
     currentLevel: (viewer: Viewer) =>
       ['levelAssessment', viewer, 'currentLevel'] as const,
+    progress: (viewer: Viewer) =>
+      ['levelAssessment', viewer, 'progress'] as const,
   },
   discovery: {
     all: (viewer: Viewer) => ['discovery', viewer] as const,

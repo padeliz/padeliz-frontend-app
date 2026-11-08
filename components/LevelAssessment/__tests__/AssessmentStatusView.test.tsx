@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import AssessmentStatusView, {
+  leaveLabelForAssessment,
   shouldShowReviewMessage,
 } from '@/components/LevelAssessment/AssessmentStatusView';
 import { makeAssessment } from '@/testing/fixtures';
@@ -40,21 +41,35 @@ describe('shouldShowReviewMessage', () => {
   });
 });
 
-describe('AssessmentStatusView', () => {
-  const finishLater = jest.fn();
+describe('leaveLabelForAssessment', () => {
+  it('uses Finish it later for editable drafts and Close otherwise', () => {
+    expect(leaveLabelForAssessment(makeAssessment())).toBe('Finish it later');
+    expect(
+      leaveLabelForAssessment(makeAssessment({ ready_for_review: true }))
+    ).toBe('Close');
+    expect(
+      leaveLabelForAssessment(makeAssessment({ review_status: 'approved' }))
+    ).toBe('Close');
+    expect(
+      leaveLabelForAssessment(makeAssessment({ review_status: 'rejected' }))
+    ).toBe('Close');
+    expect(
+      leaveLabelForAssessment(makeAssessment({ review_status: 'discarded' }))
+    ).toBe('Close');
+  });
+});
 
-  it('renders Submit, Discard, and Finish later for editable pending drafts', () => {
+describe('AssessmentStatusView', () => {
+  it('renders Submit and Discard for editable pending drafts', () => {
     render(
       <AssessmentStatusView
         assessment={makeAssessment()}
         onSubmitForReview={jest.fn()}
         onDiscard={jest.fn()}
-        onFinishLater={finishLater}
       />
     );
     expect(screen.getByTestId('assessment-submit-for-review')).toBeTruthy();
     expect(screen.getByTestId('assessment-discard')).toBeTruthy();
-    expect(screen.getByTestId('assessment-finish-later')).toBeTruthy();
     expect(screen.queryByText('Done')).toBeNull();
     expect(screen.queryByTestId('assessment-status-meta')).toBeNull();
     expect(screen.queryByText(/Everything is optional/i)).toBeNull();
@@ -67,7 +82,6 @@ describe('AssessmentStatusView', () => {
       <AssessmentStatusView
         assessment={makeAssessment({ ready_for_review: true })}
         onReopen={jest.fn()}
-        onFinishLater={finishLater}
       />
     );
     expect(screen.getByTestId('assessment-reopen')).toBeTruthy();
@@ -82,7 +96,6 @@ describe('AssessmentStatusView', () => {
           review_message: 'Band set',
         })}
         onCreateNew={jest.fn()}
-        onFinishLater={finishLater}
       />
     );
     expect(screen.getByTestId('assessment-create-new')).toBeTruthy();
@@ -96,7 +109,6 @@ describe('AssessmentStatusView', () => {
         assessment={makeAssessment()}
         onSubmitForReview={jest.fn()}
         onDiscard={jest.fn()}
-        onFinishLater={finishLater}
         submitting
         discarding
       />
@@ -108,7 +120,6 @@ describe('AssessmentStatusView', () => {
       <AssessmentStatusView
         assessment={makeAssessment({ ready_for_review: true })}
         onReopen={jest.fn()}
-        onFinishLater={finishLater}
         reopening
       />
     );
@@ -118,7 +129,6 @@ describe('AssessmentStatusView', () => {
       <AssessmentStatusView
         assessment={makeAssessment({ review_status: 'approved' })}
         onCreateNew={jest.fn()}
-        onFinishLater={finishLater}
         creating
       />
     );

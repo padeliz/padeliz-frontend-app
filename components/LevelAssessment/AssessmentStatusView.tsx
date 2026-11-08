@@ -16,11 +16,12 @@ type Props = {
   creating?: boolean;
   submitting?: boolean;
   discarding?: boolean;
+  /** True while any wizard step save/photo spinner is active. */
+  actionsDisabled?: boolean;
   onReopen?: () => void;
   onSubmitForReview?: () => void;
   onCreateNew?: () => void;
   onDiscard?: () => void;
-  onFinishLater: () => void;
 };
 
 function shouldShowReviewMessage(
@@ -30,8 +31,14 @@ function shouldShowReviewMessage(
   return assessment.review_status === 'approved' || assessment.review_status === 'rejected';
 }
 
+export function leaveLabelForAssessment(
+  assessment: PlayerLevelAssessment
+): 'Finish it later' | 'Close' {
+  return isDraftEditable(assessment) ? 'Finish it later' : 'Close';
+}
+
 /**
- * Status step body. Bottom StepNavButtons are never rendered for this step by the wizard.
+ * Status step body. Leave footer is owned by the screen (viewport-fixed).
  */
 export default function AssessmentStatusView({
   assessment,
@@ -39,11 +46,11 @@ export default function AssessmentStatusView({
   creating,
   submitting,
   discarding,
+  actionsDisabled = false,
   onReopen,
   onSubmitForReview,
   onCreateNew,
   onDiscard,
-  onFinishLater,
 }: Props) {
   const editable = isDraftEditable(assessment);
   const locked = isLockedForReview(assessment);
@@ -98,6 +105,7 @@ export default function AssessmentStatusView({
             label="Submit for Review"
             onPress={onSubmitForReview}
             loading={submitting}
+            disabled={actionsDisabled && !submitting}
             testID="assessment-submit-for-review"
           />
         ) : null}
@@ -127,20 +135,12 @@ export default function AssessmentStatusView({
             variant="secondary"
             onPress={onDiscard}
             loading={discarding}
+            disabled={actionsDisabled && !discarding}
             testID="assessment-discard"
-            style={styles.discard}
-            labelStyle={styles.discardLabel}
+            style={actionsDisabled && !discarding ? undefined : styles.discard}
+            labelStyle={actionsDisabled && !discarding ? undefined : styles.discardLabel}
           />
         ) : null}
-      </View>
-
-      <View style={styles.stickyFooter}>
-        <Button
-          label="Finish it later"
-          variant="secondary"
-          onPress={onFinishLater}
-          testID="assessment-finish-later"
-        />
       </View>
     </View>
   );
@@ -180,9 +180,5 @@ const styles = StyleSheet.create({
   },
   discardLabel: {
     color: Colors.RED,
-  },
-  stickyFooter: {
-    marginTop: 32,
-    paddingTop: 12,
   },
 });
